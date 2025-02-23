@@ -4,20 +4,20 @@ hydrophones:
   positions:    # Manual hydrophones
     - [0, 0]    # Hydrophone 1
     - [1000, 0] # Hydrophone 2
-  num_random: 3  # Generate 3 random hydrophones
+  num_random: 0  # Generate random hydrophones
   noise_level: 2.0
 
 ships:
-  ais_ships:
-    - x: 500
-      y: 500
+  ais_ships:    # Manual ais ships
+    - position: [500, 500] # AIS Ship 1
       speed: 10
-    - x: 340
-      y: 600
+    - position: [120, 600] # AIS Ship 2
       speed: 10
+  num_random_ais_ships: 0 # Generate random ais ships
+
   dark_ships:
-    - x: 100
-      y: 200
+    - position: [300, 100]
       speed: 15
-  num_random_ais_ships: 3
-  num_random_dark_ships: 1
+  num_random_dark_ships: 0
+
+  speed_range: [5,20]

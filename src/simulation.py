@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 import yaml
 
 class Hydrophone:
@@ -41,6 +42,7 @@ class SimulationManager:
         self.config = self._load_config(config_path)
         self.hydrophones = []
         self.ships = []
+        self.hydrophone_counter = 1  # Global hydrophone ID counter
         self.ship_counter = 1  # Global ship ID counter
         self.area = [0, 0, 0, 0]
 
@@ -130,8 +132,8 @@ class SimulationManager:
         """
         return Ship(
             id= self.ship_counter,
-            x=ship_data['x'],
-            y=ship_data['y'],
+            x=ship_data['position'][0],
+            y=ship_data['position'][1],
             speed=ship_data['speed'],
             is_dark=is_dark,
             base_noise=ship_data.get(
@@ -153,3 +155,60 @@ class SimulationManager:
             speed=np.random.uniform(*self.config['ships']['speed_range']),
             is_dark=is_dark
         )
+
+
+    def plot_environment(self):
+        """Plot ships and hydrophones on a map with proper legend handling."""
+        if not self.hydrophones and not self.ships:
+            print("The environment is empty!")
+            return
+
+        _, ax = plt.subplots(figsize=(10, 8))
+
+        # Hydrophones plot
+        hx = [h.x for h in self.hydrophones]
+        hy = [h.y for h in self.hydrophones]
+        hydro_plot = ax.scatter(
+            hx, hy,
+            c='blue',
+            marker='^',
+            s=100,
+            label='Hydrophones',
+            zorder=3
+        )
+
+        # Ships plot
+        ship_types = {}
+        for ship in self.ships:
+            color = 'red' if ship.is_dark else 'green'
+            label = 'Dark Ship' if ship.is_dark else 'AIS Ship'
+
+            if label not in ship_types:
+                ship_types[label] = ax.scatter(
+                    ship.x, ship.y,
+                    c=color,
+                    marker='o',
+                    s=80,
+                    label=label,
+                    zorder=2
+                )
+            else:
+                ax.scatter(ship.x, ship.y, c=color, marker='o', s=80, zorder=2)
+
+        # Plot config
+        ax.set_xlabel("X (m)", fontsize=12)
+        ax.set_ylabel("Y (m)", fontsize=12)
+        ax.set_title("Simulation Map", fontsize=14, pad=15)
+        ax.grid(True, linestyle='--', alpha=0.6)
+
+        # Legend
+        legend_elements = [hydro_plot] + list(ship_types.values())
+        ax.legend(
+            handles=legend_elements,
+            loc='upper left',
+            bbox_to_anchor=(1.05, 1),
+            title="Legend"
+        )
+
+        plt.tight_layout()
+        plt.show()
