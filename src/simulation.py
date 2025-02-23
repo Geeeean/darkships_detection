@@ -81,7 +81,6 @@ class SimulationManager:
             )
             self.hydrophone_counter += 1
 
-
     def _create_random_hydrophones(self):
         # Random hydrophones
         num_random = self.config['hydrophones'].get('num_random', 0)
@@ -110,22 +109,15 @@ class SimulationManager:
 
     def _create_random_ships(self):
         """Generate random ships to complete configured totals"""
-        # Calculate remaining AIS ships needed
-        total_ais = self.config['ships'].get('num_ais_ships', 0)
-        existing_ais = len([s for s in self.ships if not s.is_dark])
-        remaining_ais = max(0, total_ais - existing_ais)
-
-        # Calculate remaining dark ships needed
-        total_dark = self.config['ships'].get('num_dark_ships', 0)
-        existing_dark = len([s for s in self.ships if s.is_dark])
-        remaining_dark = max(0, total_dark - existing_dark)
+        random_ais = self.config['ships'].get('num_random_ais_ships', 0)
+        random_dark = self.config['ships'].get('num_random_dark_ships', 0)
 
         # Generate remaining random ships
-        for _ in range(remaining_ais):
+        for _ in range(random_ais):
             self.ships.append(self._create_random_ship(False))
             self.ship_counter += 1
 
-        for _ in range(remaining_dark):
+        for _ in range(random_dark):
             self.ships.append(self._create_random_ship(True))
             self.ship_counter += 1
 
@@ -137,7 +129,7 @@ class SimulationManager:
             is_dark (bool): Dark ship status
         """
         return Ship(
-            id=ship_data.get('id', self.ship_counter),
+            id= self.ship_counter,
             x=ship_data['x'],
             y=ship_data['y'],
             speed=ship_data['speed'],
