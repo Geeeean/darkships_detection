@@ -1,0 +1,22 @@
+area: [0, 1000, 0, 500]  # x_min, x_max, y_min, y_max
+
+hydrophones:
+  positions:    # Idrofoni manuali
+    - [0, 0]    # Idrofono 1
+    - [1000, 0] # Idrofono 2
+  num_random: 3  # Genera 3 idrofoni casuali
+  noise_level: 2.0
+
+ships:
+  ais_ships:
+    - id: 1
+      x: 500
+      y: 500
+      speed: 10
+  num_ais_ships: 3
+  dark_ships:
+    - id: 4
+      x: 100
+      y: 200
+      speed: 15
+  num_dark_ships: 1
