@@ -11,5 +11,12 @@
 
 ## Install dependencies
 ```bash
+    cd darkships_detection
     pip install -r requirements.txt
+```
+
+## Run
+```bash
+    cd src
+    python3 main.py ../config/01sample.yaml
 ```
