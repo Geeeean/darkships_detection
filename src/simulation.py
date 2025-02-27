@@ -2,6 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import yaml
 
+from utils import Utils
+from core import AcousticCalculator
+
 class Hydrophone:
     """Represents an underwater acoustic sensor
     Attributes:
@@ -70,6 +73,9 @@ class SimulationManager:
         # Create ships
         self._create_manual_ships()
         self._create_random_ships()
+
+        # Calculate hydrophones noises
+        AcousticCalculator.calculate_noises(self.hydrophones, self.ships, self.config)
 
     def _set_area(self):
         """Set area from configuration"""
@@ -159,7 +165,9 @@ class SimulationManager:
     def plot_environment(self, map):
         """Plot ships and hydrophones on a map with proper legend handling."""
 
-        # Hydrophones plot
+        # -------------------------------------
+        # |         Hydrophones plot          |
+        # -------------------------------------
         hx = [h.x for h in self.hydrophones]
         hy = [h.y for h in self.hydrophones]
         hydro_plot = map.scatter(
@@ -171,23 +179,43 @@ class SimulationManager:
             zorder=3
         )
 
-        # Ships plot
-        ship_types = {}
-        for ship in self.ships:
-            color = 'red' if ship.is_dark else 'green'
-            label = 'Dark Ship' if ship.is_dark else 'AIS Ship'
+        hydro_labels = [
+            f"Hydrophone {h.id}\n"
+                f"Position: ({h.x}, {h.y})\n"
+                f"Observed: {h.observed_noise:.2f} dB\n"
+                f"Expected: {h.expected_noise:.2f} dB\n"
+                f"Delta: {AcousticCalculator.compute_noies_delta(h):.2f} dB"
+            for h in self.hydrophones
+        ]
 
-            if label not in ship_types:
-                ship_types[label] = map.scatter(
-                    ship.x, ship.y,
-                    c=color,
-                    marker='o',
-                    s=80,
-                    label=label,
-                    zorder=2
-                )
-            else:
-                map.scatter(ship.x, ship.y, c=color, marker='o', s=80, zorder=2)
+        Utils.add_hover_tooltip(hydro_plot, hydro_labels)
+
+        # -------------------------------------
+        # |             Ships plot            |
+        # -------------------------------------
+        sx = [s.x for s in self.ships]
+        sy = [s.y for s in self.ships]
+        ship_colors = ['red' if s.is_dark else 'green' for s in self.ships]
+
+        ship_plot = map.scatter(
+            sx, sy,
+            c=ship_colors,
+            marker='o',
+            s=150,
+            label='Ships',
+            zorder=3
+        )
+
+        ship_labels = [
+            f"Ship {s.id}\n"
+            f"Position: ({s.x}, {s.y})\n"
+            f"Speed: {s.speed:.2f} knots\n"
+            f"Base noise: {s.base_noise:.2f} dB\n"
+            f"Is Dark: {s.is_dark}"
+            for s in self.ships
+        ]
+
+        Utils.add_hover_tooltip(ship_plot, ship_labels)
 
         # Plot config
         map.set_xlabel("X (m)", fontsize=12)
@@ -196,13 +224,15 @@ class SimulationManager:
         map.grid(True, linestyle='--', alpha=0.6)
 
         # Legend
-        legend_elements = [hydro_plot] + list(ship_types.values())
-        map.legend(
-            handles=legend_elements,
-            loc='upper left',
-            bbox_to_anchor=(1.05, 1),
-            title="Legend"
-        )
+        from matplotlib.lines import Line2D
+
+        legend_elements = [
+            Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='Dark Ship'),
+            Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label='AIS Ship'),
+            Line2D([0], [0], marker='^', color='w', markerfacecolor='blue', markersize=10, label='Hydrophones'),
+        ]
+
+        plt.legend(handles=legend_elements, loc='upper right')
 
     def plot_simulation(self):
         """Plot the environment with calculated statistics side by side."""
@@ -212,7 +242,7 @@ class SimulationManager:
 
         fig = plt.figure(figsize=(14, 8))
         #gs = fig.add_gridspec(1, 2, width_ratios=[3, 1])  # 3:1 ratio for map:data
-        gs = fig.add_gridspec(1, 1)  # 3:1 ratio for map:data
+        gs = fig.add_gridspec(1, 1)
 
         map = fig.add_subplot(gs[0])
         self.plot_environment(map)

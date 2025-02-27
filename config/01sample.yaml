@@ -10,7 +10,7 @@ hydrophones:
 ships:
   ais_ships:    # Manual ais ships
     - position: [500, 500] # AIS Ship 1
-      speed: 10
+      speed: 10 # [kt]
     - position: [120, 600] # AIS Ship 2
       speed: 10
   num_random_ais_ships: 0 # Generate random ais ships
