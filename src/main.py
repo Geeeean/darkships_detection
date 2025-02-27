@@ -7,7 +7,7 @@ def main():
     sim_manager = SimulationManager(config_path);
 
     sim_manager.initialize_environment()
-    sim_manager.plot_environment()
+    sim_manager.plot_simulation()
 
 def get_config_path():
     if len(sys.argv) < 2:

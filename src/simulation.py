@@ -156,19 +156,13 @@ class SimulationManager:
             is_dark=is_dark
         )
 
-
-    def plot_environment(self):
+    def plot_environment(self, map):
         """Plot ships and hydrophones on a map with proper legend handling."""
-        if not self.hydrophones and not self.ships:
-            print("The environment is empty!")
-            return
-
-        _, ax = plt.subplots(figsize=(10, 8))
 
         # Hydrophones plot
         hx = [h.x for h in self.hydrophones]
         hy = [h.y for h in self.hydrophones]
-        hydro_plot = ax.scatter(
+        hydro_plot = map.scatter(
             hx, hy,
             c='blue',
             marker='^',
@@ -184,7 +178,7 @@ class SimulationManager:
             label = 'Dark Ship' if ship.is_dark else 'AIS Ship'
 
             if label not in ship_types:
-                ship_types[label] = ax.scatter(
+                ship_types[label] = map.scatter(
                     ship.x, ship.y,
                     c=color,
                     marker='o',
@@ -193,22 +187,38 @@ class SimulationManager:
                     zorder=2
                 )
             else:
-                ax.scatter(ship.x, ship.y, c=color, marker='o', s=80, zorder=2)
+                map.scatter(ship.x, ship.y, c=color, marker='o', s=80, zorder=2)
 
         # Plot config
-        ax.set_xlabel("X (m)", fontsize=12)
-        ax.set_ylabel("Y (m)", fontsize=12)
-        ax.set_title("Simulation Map", fontsize=14, pad=15)
-        ax.grid(True, linestyle='--', alpha=0.6)
+        map.set_xlabel("X (m)", fontsize=12)
+        map.set_ylabel("Y (m)", fontsize=12)
+        map.set_title("Simulation Map", fontsize=14, pad=15)
+        map.grid(True, linestyle='--', alpha=0.6)
 
         # Legend
         legend_elements = [hydro_plot] + list(ship_types.values())
-        ax.legend(
+        map.legend(
             handles=legend_elements,
             loc='upper left',
             bbox_to_anchor=(1.05, 1),
             title="Legend"
         )
+
+    def plot_simulation(self):
+        """Plot the environment with calculated statistics side by side."""
+        if not self.hydrophones and not self.ships:
+            print("The environment is empty!")
+            return
+
+        fig = plt.figure(figsize=(14, 8))
+        #gs = fig.add_gridspec(1, 2, width_ratios=[3, 1])  # 3:1 ratio for map:data
+        gs = fig.add_gridspec(1, 1)  # 3:1 ratio for map:data
+
+        map = fig.add_subplot(gs[0])
+        self.plot_environment(map)
+
+        #data = fig.add_subplot(gs[1])
+        #self.plot_data(data)
 
         plt.tight_layout()
         plt.show()
