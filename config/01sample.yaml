@@ -4,13 +4,14 @@ hydrophones:
   positions:    # Manual hydrophones
     - [0, 0]    # Hydrophone 1
     - [1000, 0] # Hydrophone 2
+    - [300, 150]
   num_random: 0  # Generate random hydrophones
   noise_level: 2.0
 
 ships:
   ais_ships:    # Manual ais ships
     - position: [500, 500] # AIS Ship 1
-      speed: 10 # [kt]
+      speed: 10 # [kt] -> used to calculate the ship's base noise
     - position: [120, 600] # AIS Ship 2
       speed: 10
   num_random_ais_ships: 0 # Generate random ais ships
