@@ -1,6 +1,10 @@
 # Setup
 
 ## Clone the repo
+```bash
+    git clone git@github.com:Geeeean/darkships_detection.git
+    cd darkships_detection
+```
 
 ## Create a virtual env
 ```bash
@@ -11,7 +15,6 @@
 
 ## Install dependencies
 ```bash
-    cd darkships_detection
     pip install -r requirements.txt
 ```
 
