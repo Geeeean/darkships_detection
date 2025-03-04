@@ -66,7 +66,7 @@ class AcousticCalculator:
 
 class DarkShipTracker:
     @staticmethod
-    def triangulate_ship_position(hydrophones):
+    def mlat(hydrophones):
         """
         Estimate the position of the ship using triangulation based on hydrophone noise differences.
 

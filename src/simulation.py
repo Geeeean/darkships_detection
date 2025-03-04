@@ -79,7 +79,7 @@ class SimulationManager:
         AcousticCalculator.calculate_noises(self.hydrophones, self.ships, self.config)
 
     def estimate_ds_positions(self):
-        print("Dark Ship triangulated position:", DarkShipTracker.triangulate_ship_position(self.hydrophones))
+        print("Dark Ship triangulated position:", DarkShipTracker.mlat(self.hydrophones))
 
     def _set_area(self):
         """Set area from configuration"""
