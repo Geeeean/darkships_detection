@@ -1,0 +1,19 @@
+area: [0, 1000, 0, 500]
+
+hydrophones:
+  positions:    # Manual hydrophones
+    - [300, 300]    # Hydrophone 1
+    - [350, 800] # Hydrophone 2
+    - [600, 575]
+  num_random: 0  # Generate random hydrophones
+  noise_level: 2.0
+
+ships:
+  num_random_ais_ships: 5 # Generate random ais ships
+
+  dark_ships:
+    - position: [500, 500]
+      speed: 15
+  num_random_dark_ships: 0
+
+  speed_range: [5,20]

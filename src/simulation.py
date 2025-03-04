@@ -4,6 +4,7 @@ import yaml
 
 from utils import Utils
 from core import AcousticCalculator
+from core import DarkShipTracker
 
 class Hydrophone:
     """Represents an underwater acoustic sensor
@@ -76,6 +77,9 @@ class SimulationManager:
 
         # Calculate hydrophones noises
         AcousticCalculator.calculate_noises(self.hydrophones, self.ships, self.config)
+
+    def estimate_ds_positions(self):
+        print("Dark Ship triangulated position:", DarkShipTracker.triangulate_ship_position(self.hydrophones))
 
     def _set_area(self):
         """Set area from configuration"""
@@ -184,7 +188,7 @@ class SimulationManager:
                 f"Position: ({h.x}, {h.y})\n"
                 f"Observed: {h.observed_noise:.2f} dB\n"
                 f"Expected: {h.expected_noise:.2f} dB\n"
-                f"Delta: {AcousticCalculator.compute_noies_delta(h):.2f} dB"
+                f"Delta: {AcousticCalculator.compute_noise_delta(h):.2f} dB"
             for h in self.hydrophones
         ]
 
