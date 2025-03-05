@@ -20,6 +20,5 @@
 
 ## Run
 ```bash
-    cd src
-    python3 main.py ../config/01sample.yaml
+    python3 src/main.py config/01sample.yaml
 ```
