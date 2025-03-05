@@ -95,14 +95,16 @@ class DarkShipTracker:
                 # Compute squared error
                 total_error += (estimated_noise - noise_delta) ** 2
 
-            return total_error  # We minimize this error
+            return total_error
 
         # Initial guess (centered in the middle of hydrophones)
         x0 = np.mean([h.x for h in hydrophones])
         y0 = np.mean([h.y for h in hydrophones])
 
+        DEFAULT_NOISE = 150
+
         # Optimize (x, y) position and noise base level
-        result = minimize(loss_function, [x0, y0, 150], method='Nelder-Mead')
+        result = minimize(loss_function, [x0, y0, DEFAULT_NOISE], method='Nelder-Mead')
 
         # Return estimated ship position and noise base
         return result.x[:2], result.x[2]  # (x, y), estimated noise base
