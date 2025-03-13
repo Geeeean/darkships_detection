@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import yaml
 
 from utils import Utils
-from core import AcousticCalculator
+from acoustic_calculator import AcousticCalculator
 from core import DarkShipTracker
 
 class Hydrophone:
