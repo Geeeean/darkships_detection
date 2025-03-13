@@ -22,20 +22,20 @@ class DarkShipTracker:
             total_error = 0
 
             for hydro in hydrophones:
-                # Get hydrophone position
-                # hx, hy = hydro.x, hydro.y
-
-                # Compute pressure delta using the static method
-                pressure_delta = AcousticCalculator.compute_pressure_delta(hydro)
-
                 # Calculate distance from ship to hydrophone
                 distance = Position.distance(ship_pos, hydro)
 
                 # Compute expected pressure delta using the inverse model
-                estimated_pressure = ship_pressure - 20 * np.log10(distance + 1e-9)
+                darkship_observed_pressure = ship_pressure - 20 * np.log10(distance + 1e-9)
+
+                # Computing the observed value as the sum of the expected value and the darkship observed pressure
+                darkship_observed_linear = AcousticCalculator.db_to_linear(darkship_observed_pressure)
+                hydro_expected_linear = AcousticCalculator.db_to_linear(hydro.expected_pressure)
+
+                new_observation = AcousticCalculator.linear_to_db(darkship_observed_linear + hydro_expected_linear)
 
                 # Compute squared error
-                total_error += (estimated_pressure - pressure_delta) ** 2
+                total_error += (new_observation - hydro.observed_pressure) ** 2
 
             return total_error
 
