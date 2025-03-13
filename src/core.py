@@ -89,7 +89,7 @@ class AcousticCalculator:
             hydro.expected_pressure = AcousticCalculator.linear_to_db(total_expected_linear)
 
     @staticmethod
-    def capowerlculate_distance_from_pressure(hydro_pressure, ship_base_pressure):
+    def calculate_distance_from_pressure(hydro_pressure, ship_base_pressure):
         """
         Calculate the distance from a hydrophone to a ship based on the received pressure.
 
