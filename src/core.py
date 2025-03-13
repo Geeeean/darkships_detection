@@ -2,6 +2,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from acoustic_calculator import AcousticCalculator
+from utils import Position
 
 class DarkShipTracker:
     @staticmethod
@@ -16,17 +17,19 @@ class DarkShipTracker:
         def loss_function(params):
             """Calculate error between estimated and observed pressure deltas."""
             ship_x, ship_y, ship_pressure = params
+            ship_pos = Position(ship_x, ship_y)
+
             total_error = 0
 
             for hydro in hydrophones:
                 # Get hydrophone position
-                hx, hy = hydro.x, hydro.y
+                # hx, hy = hydro.x, hydro.y
 
                 # Compute pressure delta using the static method
                 pressure_delta = AcousticCalculator.compute_pressure_delta(hydro)
 
                 # Calculate distance from ship to hydrophone
-                distance = np.sqrt((ship_x - hx)**2 + (ship_y - hy)**2)
+                distance = Position.distance(ship_pos, hydro)
 
                 # Compute expected pressure delta using the inverse model
                 estimated_pressure = ship_pressure - 20 * np.log10(distance + 1e-9)

@@ -1,6 +1,8 @@
 import numpy as np
 from math import log10, sqrt
 
+from utils import Position
+
 class AcousticCalculator:
     @staticmethod
     def db_to_linear(pressure_db):
@@ -39,9 +41,7 @@ class AcousticCalculator:
         """
 
         # Distance between the hydrophone and the ship
-        dx = hydro.x - ship.x
-        dy = hydro.y - ship.y
-        distance = sqrt(dx**2 + dy**2)
+        distance = Position.distance(hydro, ship)
 
         # calculate attenuation of the pressure based on the distance
         attenuation = AcousticCalculator.calculate_attenuation(distance)
