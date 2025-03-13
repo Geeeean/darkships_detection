@@ -1,7 +1,6 @@
 import sys
 from simulation import SimulationManager
 
-
 def main():
     config_path = get_config_path()
     sim_manager = SimulationManager(config_path);

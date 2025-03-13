@@ -12,15 +12,15 @@ class Hydrophone:
         id (int): Unique identifier
         x (float): X coordinate [meters]
         y (float): Y coordinate [meters]
-        observed_noise (float): Measured noise level [dB re 1μPa]
-        expected_noise (float): Predicted noise level from AIS data
+        observed_pressure (float): Measured acoustic pressure [dB re 1μPa]
+        expected_pressure (float): Predicted acoustic pressure from AIS data
     """
     def __init__(self, id, x, y):
         self.id = id
         self.x = x
         self.y = y
-        self.observed_noise = 0.0
-        self.expected_noise = 0.0
+        self.observed_pressure = 0.0
+        self.expected_pressure = 0.0
 
 class Ship:
     """Represents a vessel with acoustic properties
@@ -30,15 +30,15 @@ class Ship:
         y (float): Y coordinate [meters]
         speed (float): Speed [knots]
         is_dark (bool): True if not transmitting AIS
-        base_noise (float): Acoustic signature at 1m distance
+        base_pressure (float): Acoustic pressure at 1m distance
     """
-    def __init__(self, id, x, y, speed, is_dark=False, base_noise = 140):
+    def __init__(self, id, x, y, speed, is_dark=False, base_pressure = 140):
         self.id = id
         self.x = x
         self.y = y
         self.speed = speed
         self.is_dark = is_dark
-        self.base_noise = base_noise + 0.5 * speed  # Empirical noise-speed relationship
+        self.base_pressure = base_pressure + 0.5 * speed  # Empirical pressure-speed relationship
 
 class SimulationManager:
     """Handles environment setup and configuration parsing"""
@@ -75,8 +75,8 @@ class SimulationManager:
         self._create_manual_ships()
         self._create_random_ships()
 
-        # Calculate hydrophones noises
-        AcousticCalculator.calculate_noises(self.hydrophones, self.ships, self.config)
+        # Calculate hydrophones expected and observed acoustic pressures
+        AcousticCalculator.calculate_pressures(self.hydrophones, self.ships, self.config)
 
     def estimate_ds_positions(self):
         print("Dark Ship triangulated position:", DarkShipTracker.mlat(self.hydrophones))
@@ -146,8 +146,8 @@ class SimulationManager:
             y=ship_data['position'][1],
             speed=ship_data['speed'],
             is_dark=is_dark,
-            base_noise=ship_data.get(
-                'base_noise',
+            base_pressure=ship_data.get(
+                'base_pressure',
                 140 + 0.5 * ship_data['speed']  # Default formula
             )
         )
@@ -186,9 +186,9 @@ class SimulationManager:
         hydro_labels = [
             f"Hydrophone {h.id}\n"
                 f"Position: ({h.x}, {h.y})\n"
-                f"Observed: {h.observed_noise:.2f} dB\n"
-                f"Expected: {h.expected_noise:.2f} dB\n"
-                f"Delta: {AcousticCalculator.compute_noise_delta(h):.2f} dB"
+                f"Observed: {h.observed_pressure:.2f} dB\n"
+                f"Expected: {h.expected_pressure:.2f} dB\n"
+                f"Delta: {AcousticCalculator.compute_pressure_delta(h):.2f} dB"
             for h in self.hydrophones
         ]
 
@@ -214,7 +214,7 @@ class SimulationManager:
             f"Ship {s.id}\n"
             f"Position: ({s.x}, {s.y})\n"
             f"Speed: {s.speed:.2f} knots\n"
-            f"Base noise: {s.base_noise:.2f} dB\n"
+            f"Base ac pressure: {s.base_pressure:.2f} dB\n"
             f"Is Dark: {s.is_dark}"
             for s in self.ships
         ]
