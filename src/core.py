@@ -97,10 +97,9 @@ class AcousticCalculator:
         :param ship_base_pressure: Base acoustic pressure of the ship (dB).
         :return: Estimated distance (in the same unit as used in original calculations).
         """
-        received_pressure = AcousticCalculator.db_to_linear(hydro_pressure)
 
-        # Compute the distance using the correct formula
-        log_distance = (ship_base_pressure - 10 * log10(received_pressure)) / 20
+        # Compute the distance
+        log_distance = (ship_base_pressure - hydro_pressure) / 20
         distance = 10 ** log_distance - 1e-9
 
         return max(distance, 0)  # Ensure distance is non-negative
