@@ -26,7 +26,7 @@ class DarkShipTracker:
                 distance = Position.distance(ship_pos, hydro)
 
                 # Compute expected pressure delta using the inverse model
-                darkship_observed_pressure = ship_pressure - 20 * np.log10(distance + 1e-9)
+                darkship_observed_pressure = ship_pressure - AcousticCalculator.calculate_attenuation(distance)
 
                 # Computing the observed value as the sum of the expected value and the darkship observed pressure
                 darkship_observed_linear = AcousticCalculator.db_to_linear(darkship_observed_pressure)
