@@ -1,4 +1,3 @@
-from math import sqrt
 import mplcursors
 
 class Utils:
@@ -17,14 +16,3 @@ class Utils:
             sel.annotation.get_bbox_patch().set_alpha(0.8)  # Semi-transparent background
 
         return cursor
-
-class Position:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    @staticmethod
-    def distance(pos1, pos2):
-        dx = pos1.x - pos2.x
-        dy = pos1.y - pos2.y
-        return sqrt(dx**2 + dy**2)

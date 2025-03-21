@@ -1,7 +1,6 @@
 import numpy as np
-from math import log10, sqrt
-
-from utils import Position
+from math import log10
+from geopy.distance import geodesic
 
 class AcousticCalculator:
     @staticmethod
@@ -41,7 +40,7 @@ class AcousticCalculator:
         """
 
         # Distance between the hydrophone and the ship
-        distance = Position.distance(hydro, ship)
+        distance = geodesic(hydro.coord, ship.coord).meters
 
         # calculate attenuation of the pressure based on the distance
         attenuation = AcousticCalculator.calculate_attenuation(distance)
@@ -54,7 +53,7 @@ class AcousticCalculator:
         return received_pressure_linear
 
     @staticmethod
-    def calculate_pressures(hydrophones, ships, config, include_base_noise_level = False):
+    def calculate_pressures(hydrophones, ships, noise_level = 0.0):
         """
         Calculate expected and observed pressures for all hydrophones.
         :param hydrophones: List of hydrophone objects.
@@ -62,8 +61,6 @@ class AcousticCalculator:
         :param config: Configuration dictionary.
         :param include_base_noise_level: Whether to include random noise in the observed pressure.
         """
-        noise_level = config['hydrophones'].get('noise_level', 0.0)
-
         for hydro in hydrophones:
             total_observed_linear = 0.0
             total_expected_linear = 0.0
@@ -80,9 +77,7 @@ class AcousticCalculator:
             # Convert total observed pressure to dB re 1 µPa
             hydro.observed_pressure = AcousticCalculator.linear_to_db(total_observed_linear)
 
-            if include_base_noise_level:
-                # Add random noise to the observed pressure
-                hydro.observed_pressure += np.random.normal(0, noise_level)
+            hydro.observed_pressure += np.random.normal(0, noise_level)
 
             # Convert total expected pressure to dB re 1 µPa
             hydro.expected_pressure = AcousticCalculator.linear_to_db(total_expected_linear)

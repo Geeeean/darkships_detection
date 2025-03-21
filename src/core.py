@@ -1,8 +1,10 @@
+from geopy.point import Point
+from geopy.distance import geodesic
+
 import numpy as np
 from scipy.optimize import minimize
 
 from acoustic_calculator import AcousticCalculator
-from utils import Position
 
 class DarkShipTracker:
     @staticmethod
@@ -16,14 +18,14 @@ class DarkShipTracker:
 
         def loss_function(params):
             """Calculate error between estimated and observed pressure deltas."""
-            ship_x, ship_y, ship_pressure = params
-            ship_pos = Position(ship_x, ship_y)
+            ship_lat, ship_long, ship_pressure = params
+            ship_coord = Point(ship_lat, ship_long)
 
             total_error = 0
 
             for hydro in hydrophones:
                 # Calculate distance from ship to hydrophone
-                distance = Position.distance(ship_pos, hydro)
+                distance = geodesic(ship_coord, hydro.coord).meters
 
                 # Compute expected pressure delta using the inverse model
                 darkship_observed_pressure = ship_pressure - AcousticCalculator.calculate_attenuation(distance)
@@ -40,13 +42,13 @@ class DarkShipTracker:
             return total_error
 
         # Initial guess (centered in the middle of hydrophones)
-        x0 = np.mean([h.x for h in hydrophones])
-        y0 = np.mean([h.y for h in hydrophones])
+        lat = np.mean([h.coord.latitude for h in hydrophones])
+        long = np.mean([h.coord.longitude for h in hydrophones])
 
         DEFAULT_PRESSURE = 150
 
         # Optimize (x, y) position and base acoustic pressure of the ship
-        result = minimize(loss_function, [x0, y0, DEFAULT_PRESSURE], method='Nelder-Mead')
+        result = minimize(loss_function, [lat, long, DEFAULT_PRESSURE], method='Nelder-Mead')
 
         # Return estimated ship position and its estimated base pressure
         return result.x[:2], result.x[2]

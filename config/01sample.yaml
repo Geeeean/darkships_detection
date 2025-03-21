@@ -1,24 +1,27 @@
-area: [0, 1000, 0, 500]  # x_min, x_max, y_min, y_max
+area: [41, 42, 10, 13]  # lat_min, lat_max, long_min, long_max
 
-hydrophones:
-  positions:    # Manual hydrophones
-    - [0, 0]    # Hydrophone 1
-    - [1000, 0] # Hydrophone 2
-    - [300, 150]
-  num_random: 0  # Generate random hydrophones
-  noise_level: 2.0
+hydrophones_config:
+  hydrophones:
+    - coordinates: [41.2, 11]     # Hydrophone 1
+      max_range: 50                 # [km]
+    - coordinates: [41.6, 12.1]     # Hydrophone 1
+      max_range: 30                 # [km]
+  num_random: 0                     # Generate random hydrophones
+  noise_level: 2.0                  # [dB re 1 µPa]
+  max_range_range: [30, 50]         # [km]
 
-ships:
-  ais_ships:    # Manual ais ships
-    - position: [500, 500] # AIS Ship 1
-      speed: 10 # [kt] -> used to calculate the ship's base noise
-    - position: [120, 600] # AIS Ship 2
-      speed: 10
-  num_random_ais_ships: 0 # Generate random ais ships
+ships_config:
+  ais_ships:                        # Manual ais ships
+    - coordinates: [41.1, 12.4]     # AIS Ship 1
+      speed: 10                     # [kt]
+      base_pressure: 150            # [dB re 1 µPa]
+    - coordinates: [41.8, 10.5]     # AIS Ship 2
+      speed: 10                     # [kt]
+  num_random_ais_ships: 0           # Generate random ais ships
 
-  dark_ships:
-    - position: [300, 100]
-      speed: 15
-  num_random_dark_ships: 0
+  dark_ships:                       # Manual dark ships
+    - coordinates: [41.4, 11.5]     # Dark Ship 1
+      speed: 15                     # kt
+  num_random_dark_ships: 0          # Generate random dark ships
 
-  speed_range: [5,20]
+  speed_range: [5,20]               # [kt]
