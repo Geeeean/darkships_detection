@@ -2,6 +2,7 @@ import numpy as np
 from math import log10
 from geopy.distance import geodesic
 
+
 class AcousticCalculator:
     @staticmethod
     def db_to_linear(pressure_db):
@@ -28,7 +29,7 @@ class AcousticCalculator:
         :param distance: Distance between the source and the receiver in meters.
         :return: Attenuation in dB.
         """
-        return 20 * log10(distance + 1e-9) # Avoid log(0)
+        return 20 * log10(distance + 1e-9)  # Avoid log(0)
 
     @staticmethod
     def calculate_linear_pressure(hydro, ship):
@@ -53,7 +54,7 @@ class AcousticCalculator:
         return received_pressure_linear
 
     @staticmethod
-    def calculate_pressures(hydrophones, ships, noise_level = 0.0):
+    def calculate_pressures(hydrophones, ships, noise_level=0.0):
         """
         Calculate expected and observed pressures for all hydrophones.
         :param hydrophones: List of hydrophone objects.
@@ -67,7 +68,9 @@ class AcousticCalculator:
 
             for ship in ships:
                 # Calculate linear pressure received from the ship
-                received_pressure = AcousticCalculator.calculate_linear_pressure(hydro, ship)
+                received_pressure = AcousticCalculator.calculate_linear_pressure(
+                    hydro, ship
+                )
 
                 # Sum the linear pressures
                 total_observed_linear += received_pressure
@@ -75,12 +78,16 @@ class AcousticCalculator:
                     total_expected_linear += received_pressure
 
             # Convert total observed pressure to dB re 1 µPa
-            hydro.observed_pressure = AcousticCalculator.linear_to_db(total_observed_linear)
+            hydro.observed_pressure = AcousticCalculator.linear_to_db(
+                total_observed_linear
+            )
 
             hydro.observed_pressure += np.random.normal(0, noise_level)
 
             # Convert total expected pressure to dB re 1 µPa
-            hydro.expected_pressure = AcousticCalculator.linear_to_db(total_expected_linear)
+            hydro.expected_pressure = AcousticCalculator.linear_to_db(
+                total_expected_linear
+            )
 
     @staticmethod
     def calculate_distance_from_pressure(hydro_pressure, ship_base_pressure):
@@ -94,7 +101,7 @@ class AcousticCalculator:
 
         # Compute the distance
         log_distance = (ship_base_pressure - hydro_pressure) / 20
-        distance = 10 ** log_distance - 1e-9
+        distance = 10**log_distance - 1e-9
 
         return max(distance, 0)  # Ensure distance is non-negative
 
@@ -102,4 +109,3 @@ class AcousticCalculator:
     def compute_pressure_delta(hydro):
         """Calculate difference between observed and expected acoustic pressure"""
         return hydro.observed_pressure - hydro.expected_pressure
-

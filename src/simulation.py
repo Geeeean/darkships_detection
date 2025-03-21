@@ -10,6 +10,7 @@ from utils import Utils
 from acoustic_calculator import AcousticCalculator
 from core import DarkShipTracker
 
+
 class Hydrophone:
     """Represents an underwater acoustic sensor
     Attributes:
@@ -19,12 +20,14 @@ class Hydrophone:
         expected_pressure (float): Predicted acoustic pressure from AIS data
         max_range (float): Max range the hydrophone can measure pressure [km]
     """
+
     def __init__(self, id, lat, long, max_range):
         self.id = id
         self.coord = Point(lat, long)
         self.max_range = max_range
         self.observed_pressure = 0.0
         self.expected_pressure = 0.0
+
 
 class Ship:
     """Represents a vessel with acoustic properties
@@ -35,15 +38,20 @@ class Ship:
         is_dark (bool): True if not transmitting AIS
         base_pressure (float): Acoustic pressure at 1m distance
     """
-    def __init__(self, id, lat, long, speed, is_dark=False, base_pressure = 140):
+
+    def __init__(self, id, lat, long, speed, is_dark=False, base_pressure=140):
         self.id = id
         self.coord = Point(lat, long)
         self.speed = speed
         self.is_dark = is_dark
-        self.base_pressure = base_pressure + 0.5 * speed  # Empirical pressure-speed relationship
+        self.base_pressure = (
+            base_pressure + 0.5 * speed
+        )  # Empirical pressure-speed relationship
+
 
 class SimulationManager:
     """Handles environment setup and configuration parsing"""
+
     def __init__(self, config_path):
         self.config = self._load_config(config_path)
         self.hydrophones = []
@@ -77,20 +85,26 @@ class SimulationManager:
         self._create_manual_ships()
         self._create_random_ships()
 
-        # Calculate hydrophones expected and observed acoustic pressures
-        noise_level = self.config['hydrophones_config'].get('noise_level', 0)
-        AcousticCalculator.calculate_pressures(self.hydrophones, self.ships, noise_level)
+        # Calculate hydrophones expected and observed acoustic pressures
+        noise_level = self.config["hydrophones_config"].get("noise_level", 0)
+        AcousticCalculator.calculate_pressures(
+            self.hydrophones, self.ships, noise_level
+        )
 
     def estimate_ds_positions(self):
-        print("Dark Ship triangulated position:", DarkShipTracker.mlat(self.hydrophones))
+        print(
+            "Dark Ship triangulated position:", DarkShipTracker.mlat(self.hydrophones)
+        )
 
     def _set_area(self):
         """Set area from configuration"""
-        self.area = self.config.get('area', [41, 42, 12, 13])  # lat_min, lat_max, long_min, long_max
+        self.area = self.config.get(
+            "area", [41, 42, 12, 13]
+        )  # lat_min, lat_max, long_min, long_max
 
     def _create_manual_hydrophones(self):
         """Create hydrophone objects from configuration"""
-        for hydro_data in self.config['hydrophones_config'].get('hydrophones', []):
+        for hydro_data in self.config["hydrophones_config"].get("hydrophones", []):
             self.hydrophones.append(self._create_hydrophone_from_data(hydro_data))
             self.hydrophone_counter += 1
 
@@ -101,10 +115,10 @@ class SimulationManager:
             hydrophone_data (dict): Hydrophone parameters from YAML
         """
         return Hydrophone(
-            id = self.hydrophone_counter,
-            lat = hydrophone_data['coordinates'][0],
-            long = hydrophone_data['coordinates'][1],
-            max_range = hydrophone_data['max_range']
+            id=self.hydrophone_counter,
+            lat=hydrophone_data["coordinates"][0],
+            long=hydrophone_data["coordinates"][1],
+            max_range=hydrophone_data["max_range"],
         )
 
     def _get_random_coordinates(self):
@@ -114,8 +128,10 @@ class SimulationManager:
 
     def _create_random_hydrophones(self):
         # Random hydrophones
-        num_random = self.config['hydrophones_config'].get('num_random', 0)
-        max_range_range = self.config['hydrophones_config'].get('max_range_range', [30, 50])
+        num_random = self.config["hydrophones_config"].get("num_random", 0)
+        max_range_range = self.config["hydrophones_config"].get(
+            "max_range_range", [30, 50]
+        )
 
         for _ in range(num_random):
             self.hydrophones.append(self._create_random_hydrophone(max_range_range))
@@ -130,19 +146,19 @@ class SimulationManager:
     def _create_manual_ships(self):
         """Create manually defined ships from YAML configuration"""
         # Process AIS ships
-        for ship_data in self.config['ships_config'].get('ais_ships', []):
+        for ship_data in self.config["ships_config"].get("ais_ships", []):
             self.ships.append(self._create_ship_from_data(ship_data, False))
             self.ship_counter += 1
 
         # Process dark ships
-        for ship_data in self.config['ships_config'].get('dark_ships', []):
+        for ship_data in self.config["ships_config"].get("dark_ships", []):
             self.ships.append(self._create_ship_from_data(ship_data, True))
             self.ship_counter += 1
 
     def _create_random_ships(self):
         """Generate random ships to complete configured totals"""
-        random_ais = self.config['ships_config'].get('num_random_ais_ships', 0)
-        random_dark = self.config['ships_config'].get('num_random_dark_ships', 0)
+        random_ais = self.config["ships_config"].get("num_random_ais_ships", 0)
+        random_dark = self.config["ships_config"].get("num_random_dark_ships", 0)
 
         # Generate remaining random ships
         for _ in range(random_ais):
@@ -161,15 +177,14 @@ class SimulationManager:
             is_dark (bool): Dark ship status
         """
         return Ship(
-            id = self.ship_counter,
-            lat=ship_data['coordinates'][0],
-            long=ship_data['coordinates'][1],
-            speed=ship_data['speed'],
+            id=self.ship_counter,
+            lat=ship_data["coordinates"][0],
+            long=ship_data["coordinates"][1],
+            speed=ship_data["speed"],
             is_dark=is_dark,
             base_pressure=ship_data.get(
-                'base_pressure',
-                140 + 0.5 * ship_data['speed']  # Default formula
-            )
+                "base_pressure", 140 + 0.5 * ship_data["speed"]  # Default formula
+            ),
         )
 
     def _create_random_ship(self, is_dark):
@@ -180,11 +195,11 @@ class SimulationManager:
         """
         lat, long = self._get_random_coordinates()
         return Ship(
-            id =self.ship_counter,
-            lat = lat,
-            long = long,
-            speed=np.random.uniform(*self.config['ships_config']['speed_range']),
-            is_dark=is_dark
+            id=self.ship_counter,
+            lat=lat,
+            long=long,
+            speed=np.random.uniform(*self.config["ships_config"]["speed_range"]),
+            is_dark=is_dark,
         )
 
     def plot_environment(self, map_ax):
@@ -201,8 +216,10 @@ class SimulationManager:
         plot_area = [long_min, long_max, lat_min, lat_max]
 
         map_ax.set_extent(plot_area, crs=ccrs.PlateCarree())
-        map_ax.coastlines(resolution='110m')
-        map_ax.add_feature(NaturalEarthFeature('physical', 'land', '110m', edgecolor='black'))
+        map_ax.coastlines(resolution="110m")
+        map_ax.add_feature(
+            NaturalEarthFeature("physical", "land", "110m", edgecolor="black")
+        )
 
         # -------------------------------------
         # |         Hydrophones plot          |
@@ -210,21 +227,22 @@ class SimulationManager:
         hx = [h.coord.longitude for h in self.hydrophones]  # Lon, Lat instead of x, y
         hy = [h.coord.latitude for h in self.hydrophones]  # Lat, Lon
         hydro_plot = map_ax.scatter(
-            hx, hy,
-            c='blue',
-            marker='^',
+            hx,
+            hy,
+            c="blue",
+            marker="^",
             s=100,
-            label='Hydrophones',
+            label="Hydrophones",
             transform=ccrs.PlateCarree(),
-            zorder=3
+            zorder=3,
         )
 
         hydro_labels = [
             f"Hydrophone {h.id}\n"
-                f"Position: ({h.coord.latitude}, {h.coord.longitude})\n"
-                f"Observed: {h.observed_pressure:.2f} dB\n"
-                f"Expected: {h.expected_pressure:.2f} dB\n"
-                f"Delta: {AcousticCalculator.compute_pressure_delta(h):.2f} dB"
+            f"Position: ({h.coord.latitude}, {h.coord.longitude})\n"
+            f"Observed: {h.observed_pressure:.2f} dB\n"
+            f"Expected: {h.expected_pressure:.2f} dB\n"
+            f"Delta: {AcousticCalculator.compute_pressure_delta(h):.2f} dB"
             for h in self.hydrophones
         ]
 
@@ -235,16 +253,17 @@ class SimulationManager:
         # -------------------------------------
         sx = [s.coord.longitude for s in self.ships]  # Lon, Lat instead of x, y
         sy = [s.coord.latitude for s in self.ships]  # Lat, Lon
-        ship_colors = ['red' if s.is_dark else 'green' for s in self.ships]
+        ship_colors = ["red" if s.is_dark else "green" for s in self.ships]
 
         ship_plot = map_ax.scatter(
-            sx, sy,
+            sx,
+            sy,
             c=ship_colors,
-            marker='o',
+            marker="o",
             s=150,
-            label='Ships',
+            label="Ships",
             transform=ccrs.PlateCarree(),
-            zorder=3
+            zorder=3,
         )
 
         ship_labels = [
@@ -262,18 +281,42 @@ class SimulationManager:
         map_ax.set_xlabel("Longitude", fontsize=12)
         map_ax.set_ylabel("Latitude", fontsize=12)
         map_ax.set_title("Ship and Hydrophone Locations", fontsize=14, pad=15)
-        map_ax.grid(True, linestyle='--', alpha=0.6)
+        map_ax.grid(True, linestyle="--", alpha=0.6)
 
         # Legend
         from matplotlib.lines import Line2D
 
         legend_elements = [
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='red', markersize=10, label='Dark Ship'),
-            Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label='AIS Ship'),
-            Line2D([0], [0], marker='^', color='w', markerfacecolor='blue', markersize=10, label='Hydrophones'),
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="w",
+                markerfacecolor="red",
+                markersize=10,
+                label="Dark Ship",
+            ),
+            Line2D(
+                [0],
+                [0],
+                marker="o",
+                color="w",
+                markerfacecolor="green",
+                markersize=10,
+                label="AIS Ship",
+            ),
+            Line2D(
+                [0],
+                [0],
+                marker="^",
+                color="w",
+                markerfacecolor="blue",
+                markersize=10,
+                label="Hydrophones",
+            ),
         ]
 
-        map_ax.legend(handles=legend_elements, loc='upper right')
+        map_ax.legend(handles=legend_elements, loc="upper right")
 
     def plot_simulation(self):
         """Plot the environment with calculated statistics side by side."""
@@ -289,4 +332,3 @@ class SimulationManager:
 
         plt.tight_layout()
         plt.show()
-

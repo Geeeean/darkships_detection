@@ -6,6 +6,7 @@ from scipy.optimize import minimize
 
 from acoustic_calculator import AcousticCalculator
 
+
 class DarkShipTracker:
     @staticmethod
     def mlat(hydrophones):
@@ -28,13 +29,21 @@ class DarkShipTracker:
                 distance = geodesic(ship_coord, hydro.coord).meters
 
                 # Compute expected pressure delta using the inverse model
-                darkship_observed_pressure = ship_pressure - AcousticCalculator.calculate_attenuation(distance)
+                darkship_observed_pressure = (
+                    ship_pressure - AcousticCalculator.calculate_attenuation(distance)
+                )
 
                 # Computing the observed value as the sum of the expected value and the darkship observed pressure
-                darkship_observed_linear = AcousticCalculator.db_to_linear(darkship_observed_pressure)
-                hydro_expected_linear = AcousticCalculator.db_to_linear(hydro.expected_pressure)
+                darkship_observed_linear = AcousticCalculator.db_to_linear(
+                    darkship_observed_pressure
+                )
+                hydro_expected_linear = AcousticCalculator.db_to_linear(
+                    hydro.expected_pressure
+                )
 
-                new_observation = AcousticCalculator.linear_to_db(darkship_observed_linear + hydro_expected_linear)
+                new_observation = AcousticCalculator.linear_to_db(
+                    darkship_observed_linear + hydro_expected_linear
+                )
 
                 # Compute squared error
                 total_error += (new_observation - hydro.observed_pressure) ** 2
@@ -48,7 +57,9 @@ class DarkShipTracker:
         DEFAULT_PRESSURE = 150
 
         # Optimize (x, y) position and base acoustic pressure of the ship
-        result = minimize(loss_function, [lat, long, DEFAULT_PRESSURE], method='Nelder-Mead')
+        result = minimize(
+            loss_function, [lat, long, DEFAULT_PRESSURE], method="Nelder-Mead"
+        )
 
         # Return estimated ship position and its estimated base pressure
         return result.x[:2], result.x[2]

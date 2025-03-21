@@ -1,5 +1,6 @@
 import mplcursors
 
+
 class Utils:
     @staticmethod
     def add_hover_tooltip(scatter_plot, labels):
@@ -13,6 +14,8 @@ class Utils:
 
             # Customize tooltip appearance
             sel.annotation.get_bbox_patch().set_facecolor("white")  # White background
-            sel.annotation.get_bbox_patch().set_alpha(0.8)  # Semi-transparent background
+            sel.annotation.get_bbox_patch().set_alpha(
+                0.8
+            )  # Semi-transparent background
 
         return cursor
