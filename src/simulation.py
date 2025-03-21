@@ -10,57 +10,22 @@ from utils import Utils
 from acoustic_calculator import AcousticCalculator
 from core import DarkShipTracker
 
-
-class Hydrophone:
-    """Represents an underwater acoustic sensor
-    Attributes:
-        id (int): Unique identifier
-        coord: Lat and Long coordinates
-        observed_pressure (float): Measured acoustic pressure [dB re 1μPa]
-        expected_pressure (float): Predicted acoustic pressure from AIS data
-        max_range (float): Max range the hydrophone can measure pressure [km]
-    """
-
-    def __init__(self, id, lat, long, max_range):
-        self.id = id
-        self.coord = Point(lat, long)
-        self.max_range = max_range
-        self.observed_pressure = 0.0
-        self.expected_pressure = 0.0
-
-
-class Ship:
-    """Represents a vessel with acoustic properties
-    Attributes:
-        id (int): Unique identifier
-        coord: Lat and Long coordinates
-        speed (float): Speed [knots]
-        is_dark (bool): True if not transmitting AIS
-        base_pressure (float): Acoustic pressure at 1m distance
-    """
-
-    def __init__(self, id, lat, long, speed, is_dark=False, base_pressure=140):
-        self.id = id
-        self.coord = Point(lat, long)
-        self.speed = speed
-        self.is_dark = is_dark
-        self.base_pressure = (
-            base_pressure + 0.5 * speed
-        )  # Empirical pressure-speed relationship
+from hydrophone import Hydrophone
+from ship import Ship
 
 
 class SimulationManager:
     """Handles environment setup and configuration parsing"""
 
-    def __init__(self, config_path):
+    def __init__(self, config_path: str):
         self.config = self._load_config(config_path)
-        self.hydrophones = []
-        self.ships = []
+        self.hydrophones: list[Hydrophone] = []
+        self.ships: list[Ship] = []
         self.hydrophone_counter = 1  # Global hydrophone ID counter
         self.ship_counter = 1  # Global ship ID counter
         self.area = [0, 0, 0, 0]
 
-    def _load_config(self, path):
+    def _load_config(self, path: str):
         """Load simulation parameters from YAML file
 
         Args:
@@ -137,7 +102,7 @@ class SimulationManager:
             self.hydrophones.append(self._create_random_hydrophone(max_range_range))
             self.hydrophone_counter += 1
 
-    def _create_random_hydrophone(self, max_range_range):
+    def _create_random_hydrophone(self, max_range_range: list[float]):
         """Generate random hydrophone within specified area"""
         lat, long = self._get_random_coordinates()
         max_range_rand = np.random.uniform(max_range_range[0], max_range_range[1])
@@ -169,7 +134,7 @@ class SimulationManager:
             self.ships.append(self._create_random_ship(True))
             self.ship_counter += 1
 
-    def _create_ship_from_data(self, ship_data, is_dark):
+    def _create_ship_from_data(self, ship_data, is_dark: bool):
         """Create ship from YAML configuration data
 
         Args:
@@ -187,7 +152,7 @@ class SimulationManager:
             ),
         )
 
-    def _create_random_ship(self, is_dark):
+    def _create_random_ship(self, is_dark: bool):
         """Generate random ship within configured parameters
 
         Args:

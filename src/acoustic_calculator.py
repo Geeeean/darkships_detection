@@ -2,10 +2,13 @@ import numpy as np
 from math import log10
 from geopy.distance import geodesic
 
+from hydrophone import Hydrophone
+from ship import Ship
+
 
 class AcousticCalculator:
     @staticmethod
-    def db_to_linear(pressure_db):
+    def db_to_linear(pressure_db: float):
         """
         Convert pressure from dB re 1 µPa to linear scale (µPa).
         :param pressure_db: Pressure in dB re 1 µPa.
@@ -14,7 +17,7 @@ class AcousticCalculator:
         return 10 ** (pressure_db / 20)
 
     @staticmethod
-    def linear_to_db(pressure_linear):
+    def linear_to_db(pressure_linear: float):
         """
         Convert pressure from linear scale (µPa) to dB re 1 µPa.
         :param pressure_linear: Pressure in µPa.
@@ -23,7 +26,7 @@ class AcousticCalculator:
         return 20 * log10(pressure_linear + 1e-12)  # Add 1e-12 to avoid log(0)
 
     @staticmethod
-    def calculate_attenuation(distance):
+    def calculate_attenuation(distance: float):
         """
         Calculate the attenuation of acoustic pressure due to geometric spreading.
         :param distance: Distance between the source and the receiver in meters.
@@ -32,7 +35,7 @@ class AcousticCalculator:
         return 20 * log10(distance + 1e-9)  # Avoid log(0)
 
     @staticmethod
-    def calculate_linear_pressure(hydro, ship):
+    def calculate_linear_pressure(hydro: Hydrophone, ship: Ship):
         """
         Calculate the linear pressure received by a hydrophone from a ship.
         :param hydro: Hydrophone object with x, y coordinates.
@@ -54,7 +57,9 @@ class AcousticCalculator:
         return received_pressure_linear
 
     @staticmethod
-    def calculate_pressures(hydrophones, ships, noise_level=0.0):
+    def calculate_pressures(
+        hydrophones: list[Hydrophone], ships: list[Ship], noise_level: float = 0.0
+    ):
         """
         Calculate expected and observed pressures for all hydrophones.
         :param hydrophones: List of hydrophone objects.
@@ -90,7 +95,9 @@ class AcousticCalculator:
             )
 
     @staticmethod
-    def calculate_distance_from_pressure(hydro_pressure, ship_base_pressure):
+    def calculate_distance_from_pressure(
+        hydro_pressure: float, ship_base_pressure: float
+    ):
         """
         Calculate the distance from a hydrophone to a ship based on the received pressure.
 
@@ -106,6 +113,6 @@ class AcousticCalculator:
         return max(distance, 0)  # Ensure distance is non-negative
 
     @staticmethod
-    def compute_pressure_delta(hydro):
+    def compute_pressure_delta(hydro: Hydrophone):
         """Calculate difference between observed and expected acoustic pressure"""
         return hydro.observed_pressure - hydro.expected_pressure

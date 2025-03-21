@@ -5,11 +5,12 @@ import numpy as np
 from scipy.optimize import minimize
 
 from acoustic_calculator import AcousticCalculator
+from hydrophone import Hydrophone
 
 
 class DarkShipTracker:
     @staticmethod
-    def mlat(hydrophones):
+    def mlat(hydrophones: list[Hydrophone]):
         """
         Estimate the position of the ship using triangulation based on hydrophone pressure differences.
 
@@ -17,7 +18,7 @@ class DarkShipTracker:
         :return: Estimated (x, y) position of the ship and estimated base pressure.
         """
 
-        def loss_function(params):
+        def loss_function(params: list[float]):
             """Calculate error between estimated and observed pressure deltas."""
             ship_lat, ship_long, ship_pressure = params
             ship_coord = Point(ship_lat, ship_long)

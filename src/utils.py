@@ -15,7 +15,7 @@ class Utils:
             # Customize tooltip appearance
             sel.annotation.get_bbox_patch().set_facecolor("white")  # White background
             sel.annotation.get_bbox_patch().set_alpha(
-                0.8
+                0.6
             )  # Semi-transparent background
 
         return cursor
