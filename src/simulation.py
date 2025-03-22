@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import yaml
-from geopy import Point
 
 import cartopy.crs as ccrs
 from cartopy.feature import NaturalEarthFeature
@@ -83,6 +82,7 @@ class SimulationManager:
             id=self.hydrophone_counter,
             lat=hydrophone_data["coordinates"][0],
             long=hydrophone_data["coordinates"][1],
+            depth=hydrophone_data["depth"],
             max_range=hydrophone_data["max_range"],
         )
 
@@ -97,16 +97,29 @@ class SimulationManager:
         max_range_range = self.config["hydrophones_config"].get(
             "max_range_range", [30, 50]
         )
+        depth_range = self.config["hydrophones_config"].get("depth_range", [0, 0])
 
         for _ in range(num_random):
-            self.hydrophones.append(self._create_random_hydrophone(max_range_range))
+            self.hydrophones.append(
+                self._create_random_hydrophone(max_range_range, depth_range)
+            )
             self.hydrophone_counter += 1
 
-    def _create_random_hydrophone(self, max_range_range: list[float]):
+    def _create_random_hydrophone(
+        self, max_range_range: list[float], depth_range: list[float]
+    ):
         """Generate random hydrophone within specified area"""
         lat, long = self._get_random_coordinates()
-        max_range_rand = np.random.uniform(max_range_range[0], max_range_range[1])
-        return Hydrophone(self.hydrophone_counter, lat, long, max_range_rand)
+        max_range = np.random.uniform(max_range_range[0], max_range_range[1])
+        depth = np.random.uniform(depth_range[0], depth_range[1])
+
+        return Hydrophone(
+            id=self.hydrophone_counter,
+            lat=lat,
+            long=long,
+            max_range=max_range,
+            depth=depth,
+        )
 
     def _create_manual_ships(self):
         """Create manually defined ships from YAML configuration"""
@@ -125,13 +138,16 @@ class SimulationManager:
         random_ais = self.config["ships_config"].get("num_random_ais_ships", 0)
         random_dark = self.config["ships_config"].get("num_random_dark_ships", 0)
 
+        depth_range = self.config["ships_config"].get("depth_range", [0, 0])
+        speed_range = self.config["ships_config"].get("speed_range", [10, 20])
+
         # Generate remaining random ships
         for _ in range(random_ais):
-            self.ships.append(self._create_random_ship(False))
+            self.ships.append(self._create_random_ship(speed_range, depth_range, False))
             self.ship_counter += 1
 
         for _ in range(random_dark):
-            self.ships.append(self._create_random_ship(True))
+            self.ships.append(self._create_random_ship(speed_range, depth_range, True))
             self.ship_counter += 1
 
     def _create_ship_from_data(self, ship_data, is_dark: bool):
@@ -145,6 +161,7 @@ class SimulationManager:
             id=self.ship_counter,
             lat=ship_data["coordinates"][0],
             long=ship_data["coordinates"][1],
+            depth=ship_data["depth"],
             speed=ship_data["speed"],
             is_dark=is_dark,
             base_pressure=ship_data.get(
@@ -152,18 +169,24 @@ class SimulationManager:
             ),
         )
 
-    def _create_random_ship(self, is_dark: bool):
+    def _create_random_ship(
+        self, speed_range: list[float], depth_range: list[float], is_dark: bool
+    ):
         """Generate random ship within configured parameters
 
         Args:
             is_dark (bool): Dark ship status
         """
         lat, long = self._get_random_coordinates()
+        depth = np.random.uniform(depth_range[0], depth_range[1])
+        speed = np.random.uniform(speed_range[0], speed_range[1])
+
         return Ship(
             id=self.ship_counter,
             lat=lat,
             long=long,
-            speed=np.random.uniform(*self.config["ships_config"]["speed_range"]),
+            depth=depth,
+            speed=speed,
             is_dark=is_dark,
         )
 
@@ -189,8 +212,10 @@ class SimulationManager:
         # -------------------------------------
         # |         Hydrophones plot          |
         # -------------------------------------
-        hx = [h.coord.longitude for h in self.hydrophones]  # Lon, Lat instead of x, y
-        hy = [h.coord.latitude for h in self.hydrophones]  # Lat, Lon
+        hx = [
+            h.coord.get_longitude() for h in self.hydrophones
+        ]  # Lon, Lat instead of x, y
+        hy = [h.coord.get_latitude() for h in self.hydrophones]  # Lat, Lon
         hydro_plot = map_ax.scatter(
             hx,
             hy,
@@ -204,7 +229,7 @@ class SimulationManager:
 
         hydro_labels = [
             f"Hydrophone {h.id}\n"
-            f"Position: ({h.coord.latitude}, {h.coord.longitude})\n"
+            f"Position: ({h.coord.get_latitude()}, {h.coord.get_longitude()})\n"
             f"Observed: {h.observed_pressure:.2f} dB\n"
             f"Expected: {h.expected_pressure:.2f} dB\n"
             f"Delta: {AcousticCalculator.compute_pressure_delta(h):.2f} dB"
@@ -216,8 +241,8 @@ class SimulationManager:
         # -------------------------------------
         # |             Ships plot            |
         # -------------------------------------
-        sx = [s.coord.longitude for s in self.ships]  # Lon, Lat instead of x, y
-        sy = [s.coord.latitude for s in self.ships]  # Lat, Lon
+        sx = [s.coord.get_longitude() for s in self.ships]  # Lon, Lat instead of x, y
+        sy = [s.coord.get_latitude() for s in self.ships]  # Lat, Lon
         ship_colors = ["red" if s.is_dark else "green" for s in self.ships]
 
         ship_plot = map_ax.scatter(
@@ -233,7 +258,7 @@ class SimulationManager:
 
         ship_labels = [
             f"Ship {s.id}\n"
-            f"Position: ({s.coord.latitude}, {s.coord.longitude})\n"
+            f"Position: ({s.coord.get_latitude()}, {s.coord.get_longitude()})\n"
             f"Speed: {s.speed:.2f} knots\n"
             f"Base ac pressure: {s.base_pressure:.2f} dB\n"
             f"Is Dark: {s.is_dark}"

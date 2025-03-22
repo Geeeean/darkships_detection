@@ -1,6 +1,5 @@
 import numpy as np
 from math import log10
-from geopy.distance import geodesic
 
 from hydrophone import Hydrophone
 from ship import Ship
@@ -44,7 +43,7 @@ class AcousticCalculator:
         """
 
         # Distance between the hydrophone and the ship
-        distance = geodesic(hydro.coord, ship.coord).meters
+        distance = hydro.coord.distance(ship.coord)
 
         # calculate attenuation of the pressure based on the distance
         attenuation = AcousticCalculator.calculate_attenuation(distance)

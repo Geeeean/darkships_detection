@@ -1,27 +1,44 @@
-area: [41, 42, 10, 13]  # lat_min, lat_max, long_min, long_max
+environment:
+  area: [41, 42, 10, 13]  # lat_min, lat_max, long_min, long_max
+  bottom_type: "sand"
 
 hydrophones_config:
+  # DATA FOR MANUAL HYDROPHONES GENERATION
   hydrophones:
-    - coordinates: [41.2, 11]     # Hydrophone 1
+    - coordinates: [41.18, 11]      # Hydrophone 1
       max_range: 50                 # [km]
-    - coordinates: [41.6, 12.1]     # Hydrophone 1
+      depth: 20                     # [m]
+    - coordinates: [41.6, 12.1]     # Hydrophone 2
       max_range: 30                 # [km]
-  num_random: 0                     # Generate random hydrophones
+      depth: 30                     # [m]
+
   noise_level: 2.0                  # [dB re 1 µPa]
+
+  # DATA FOR RANDOM HYDROPHONES GENERATION
+  num_random: 0                     # Generate random hydrophones
   max_range_range: [30, 50]         # [km]
+  depth_range: [0, 35]              # [m]
 
 ships_config:
+  # DATA FOR MANUAL SHIPS GENERATION
   ais_ships:                        # Manual ais ships
     - coordinates: [41.1, 12.4]     # AIS Ship 1
       speed: 10                     # [kt]
       base_pressure: 150            # [dB re 1 µPa]
+      depth: 10                     # [m]
     - coordinates: [41.8, 10.5]     # AIS Ship 2
       speed: 10                     # [kt]
-  num_random_ais_ships: 0           # Generate random ais ships
+      base_pressure: 130            # [dB re 1 µPa]
+      depth: 10                     # [m]
 
   dark_ships:                       # Manual dark ships
     - coordinates: [41.4, 11.5]     # Dark Ship 1
       speed: 15                     # kt
-  num_random_dark_ships: 0          # Generate random dark ships
+      base_pressure: 130            # [dB re 1 µPa]
+      depth: 10                     # [m]
 
+  # DATA FOR RANDOM SHIPS GENERATION
+  num_random_ais_ships: 0           # Generate random ais ships
+  num_random_dark_ships: 0          # Generate random dark ships
   speed_range: [5,20]               # [kt]
+  depth_range: [0, 25]              # [m]

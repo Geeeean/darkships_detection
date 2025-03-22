@@ -1,11 +1,9 @@
-from geopy.point import Point
-from geopy.distance import geodesic
-
 import numpy as np
 from scipy.optimize import minimize
 
 from acoustic_calculator import AcousticCalculator
 from hydrophone import Hydrophone
+from point import Point
 
 
 class DarkShipTracker:
@@ -20,14 +18,14 @@ class DarkShipTracker:
 
         def loss_function(params: list[float]):
             """Calculate error between estimated and observed pressure deltas."""
-            ship_lat, ship_long, ship_pressure = params
-            ship_coord = Point(ship_lat, ship_long)
+            ship_lat, ship_long, ship_depth, ship_pressure = params
+            ship_coord = Point(ship_lat, ship_long, ship_depth)
 
             total_error = 0
 
             for hydro in hydrophones:
                 # Calculate distance from ship to hydrophone
-                distance = geodesic(ship_coord, hydro.coord).meters
+                distance = ship_coord.distance(hydro.coord)
 
                 # Compute expected pressure delta using the inverse model
                 darkship_observed_pressure = (
@@ -52,15 +50,16 @@ class DarkShipTracker:
             return total_error
 
         # Initial guess (centered in the middle of hydrophones)
-        lat = np.mean([h.coord.latitude for h in hydrophones])
-        long = np.mean([h.coord.longitude for h in hydrophones])
+        lat = np.mean([h.coord.get_latitude() for h in hydrophones])
+        long = np.mean([h.coord.get_longitude() for h in hydrophones])
+        depth = np.mean([h.coord.get_depth() for h in hydrophones])
 
         DEFAULT_PRESSURE = 150
 
         # Optimize (x, y) position and base acoustic pressure of the ship
         result = minimize(
-            loss_function, [lat, long, DEFAULT_PRESSURE], method="Nelder-Mead"
+            loss_function, [lat, long, depth, DEFAULT_PRESSURE], method="Nelder-Mead"
         )
 
         # Return estimated ship position and its estimated base pressure
-        return result.x[:2], result.x[2]
+        return result.x[:3], result.x[2]
