@@ -213,9 +213,9 @@ class SimulationManager:
         # |         Hydrophones plot          |
         # -------------------------------------
         hx = [
-            h.coord.get_longitude() for h in self.hydrophones
+            h.coord.longitude for h in self.hydrophones
         ]  # Lon, Lat instead of x, y
-        hy = [h.coord.get_latitude() for h in self.hydrophones]  # Lat, Lon
+        hy = [h.coord.latitude for h in self.hydrophones]  # Lat, Lon
         hydro_plot = map_ax.scatter(
             hx,
             hy,
@@ -229,7 +229,7 @@ class SimulationManager:
 
         hydro_labels = [
             f"Hydrophone {h.id}\n"
-            f"Position: ({h.coord.get_latitude()}, {h.coord.get_longitude()})\n"
+            f"Position: ({h.coord.latitude}, {h.coord.longitude})\n"
             f"Observed: {h.observed_pressure:.2f} dB\n"
             f"Expected: {h.expected_pressure:.2f} dB\n"
             f"Delta: {AcousticCalculator.compute_pressure_delta(h):.2f} dB"
@@ -241,8 +241,8 @@ class SimulationManager:
         # -------------------------------------
         # |             Ships plot            |
         # -------------------------------------
-        sx = [s.coord.get_longitude() for s in self.ships]  # Lon, Lat instead of x, y
-        sy = [s.coord.get_latitude() for s in self.ships]  # Lat, Lon
+        sx = [s.coord.longitude for s in self.ships]  # Lon, Lat instead of x, y
+        sy = [s.coord.latitude for s in self.ships]  # Lat, Lon
         ship_colors = ["red" if s.is_dark else "green" for s in self.ships]
 
         ship_plot = map_ax.scatter(
@@ -258,7 +258,7 @@ class SimulationManager:
 
         ship_labels = [
             f"Ship {s.id}\n"
-            f"Position: ({s.coord.get_latitude()}, {s.coord.get_longitude()})\n"
+            f"Position: ({s.coord.latitude}, {s.coord.longitude})\n"
             f"Speed: {s.speed:.2f} knots\n"
             f"Base ac pressure: {s.base_pressure:.2f} dB\n"
             f"Is Dark: {s.is_dark}"

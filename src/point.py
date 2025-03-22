@@ -19,10 +19,12 @@ class Point:
         delta_depth: float = abs(self.depth - other.depth)
         return sqrt(d2d**2 + delta_depth**2)
 
-    def get_latitude(self):
+    @property
+    def latitude(self):
         return self.coord.latitude
 
-    def get_longitude(self):
+    @property
+    def longitude(self):
         return self.coord.longitude
 
     def get_depth(self):

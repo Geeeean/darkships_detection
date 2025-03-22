@@ -50,9 +50,9 @@ class DarkShipTracker:
             return total_error
 
         # Initial guess (centered in the middle of hydrophones)
-        lat = np.mean([h.coord.get_latitude() for h in hydrophones])
-        long = np.mean([h.coord.get_longitude() for h in hydrophones])
-        depth = np.mean([h.coord.get_depth() for h in hydrophones])
+        lat = np.mean([h.coord.latitude for h in hydrophones])
+        long = np.mean([h.coord.longitude for h in hydrophones])
+        depth = np.mean([h.coord.depth for h in hydrophones])
 
         DEFAULT_PRESSURE = 150
 
