@@ -14,7 +14,7 @@ class Point:
         self.coord: Geopoint = Geopoint(lat, long)
         self.depth: float = depth
 
-    def distance(self, other: "Point"):
+    def distance(self, other: "Point") -> float:
         d2d = geodesic(self.coord, other.coord).meters
         delta_depth: float = abs(self.depth - other.depth)
         return sqrt(d2d**2 + delta_depth**2)
