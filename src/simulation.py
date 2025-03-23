@@ -11,6 +11,7 @@ from core import DarkShipTracker
 
 from hydrophone import Hydrophone
 from ship import Ship
+from bathymetry import Bathymetry
 
 
 class SimulationManager:
@@ -23,6 +24,7 @@ class SimulationManager:
         self.hydrophone_counter = 1  # Global hydrophone ID counter
         self.ship_counter = 1  # Global ship ID counter
         self.area = [0, 0, 0, 0]
+        self.bathymetry = Bathymetry
 
     def _load_config(self, path: str):
         """Load simulation parameters from YAML file
@@ -40,6 +42,7 @@ class SimulationManager:
 
         # Set environment area
         self._set_area()
+        self._set_bathymetry()
 
         # Create hydrophones
         self._create_manual_hydrophones()
@@ -62,9 +65,11 @@ class SimulationManager:
 
     def _set_area(self):
         """Set area from configuration"""
-        self.area = self.config.get(
-            "area", [41, 42, 12, 13]
-        )  # lat_min, lat_max, long_min, long_max
+        self.area = self.config["environment"].get("area")
+
+    def _set_bathymetry(self):
+        bathymetry_path = self.config["environment"].get("bathymetry_path")
+        self.bathymetry = Bathymetry(bathymetry_path)
 
     def _create_manual_hydrophones(self):
         """Create hydrophone objects from configuration"""
@@ -212,9 +217,7 @@ class SimulationManager:
         # -------------------------------------
         # |         Hydrophones plot          |
         # -------------------------------------
-        hx = [
-            h.coord.longitude for h in self.hydrophones
-        ]  # Lon, Lat instead of x, y
+        hx = [h.coord.longitude for h in self.hydrophones]  # Lon, Lat instead of x, y
         hy = [h.coord.latitude for h in self.hydrophones]  # Lat, Lon
         hydro_plot = map_ax.scatter(
             hx,

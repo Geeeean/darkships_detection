@@ -1,5 +1,6 @@
 import numpy as np
 from math import log10
+import arlpy.uwapm as pm
 
 from hydrophone import Hydrophone
 from ship import Ship
