@@ -19,3 +19,7 @@ class Hydrophone:
         self.max_range = max_range
         self.observed_pressure = 0.0
         self.expected_pressure = 0.0
+
+    def compute_pressure_delta(self):
+        """Calculate difference between observed and expected acoustic pressure"""
+        return self.observed_pressure - self.expected_pressure

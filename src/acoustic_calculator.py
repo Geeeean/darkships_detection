@@ -76,8 +76,3 @@ class AcousticCalculator:
         distance = 10**log_distance - 1e-9
 
         return max(distance, 0)  # Ensure distance is non-negative
-
-    @staticmethod
-    def compute_pressure_delta(hydro: Hydrophone):
-        """Calculate difference between observed and expected acoustic pressure"""
-        return hydro.observed_pressure - hydro.expected_pressure

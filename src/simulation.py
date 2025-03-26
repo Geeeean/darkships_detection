@@ -239,7 +239,7 @@ class Simulation:
             f"Position: ({h.coord.latitude}, {h.coord.longitude})\n"
             f"Observed: {h.observed_pressure:.2f} dB\n"
             f"Expected: {h.expected_pressure:.2f} dB\n"
-            f"Delta: {AcousticCalculator.compute_pressure_delta(h):.2f} dB"
+            f"Delta: {h.compute_pressure_delta():.2f} dB"
             for h in self.environment.hydrophones
         ]
 
