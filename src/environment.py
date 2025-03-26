@@ -59,6 +59,8 @@ class Environment:
             total_expected_linear = 0.0
 
             for ship in self.ships:
+                env['depth'] = self.bathymetry.get_depth_profile(ship.coord, hydro.coord, 10)
+
                 # Calculate linear pressure received from the ship
                 received_pressure = AcousticCalculator.calculate_linear_pressure(
                     hydro, ship, env
