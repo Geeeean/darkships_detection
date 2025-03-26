@@ -26,6 +26,3 @@ class Point:
     @property
     def longitude(self):
         return self.coord.longitude
-
-    def get_depth(self):
-        return self.depth

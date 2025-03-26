@@ -58,7 +58,7 @@ class Simulation:
         self.estimate_ds_positions()
 
     def estimate_ds_positions(self):
-        est_pos = DarkShipTracker.mlat(self.environment.hydrophones)
+        est_pos = DarkShipTracker.mlat(self.environment)
         print("Dark Ship triangulated position:", est_pos)
 
     def _get_area(self):

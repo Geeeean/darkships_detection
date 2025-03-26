@@ -1,14 +1,15 @@
+from arlpy import uwapm as pm
 import numpy as np
 from scipy.optimize import minimize
 
 from acoustic_calculator import AcousticCalculator
-from hydrophone import Hydrophone
 from point import Point
+from environment import Environment
 
 
 class DarkShipTracker:
     @staticmethod
-    def mlat(hydrophones: list[Hydrophone]):
+    def mlat(environment: Environment):
         """
         Estimate the position of the ship using triangulation based on hydrophone pressure differences.
 
@@ -16,21 +17,25 @@ class DarkShipTracker:
         :return: Estimated (x, y) position of the ship and estimated base pressure.
         """
 
+        bellhop_env = pm.create_env2d()
+
         def loss_function(params: list[float]):
             """Calculate error between estimated and observed pressure deltas."""
             ship_lat, ship_long, ship_depth, ship_pressure = params
-            ship_coord = Point(ship_lat, ship_long, ship_depth)
+            ship_point = Point(ship_lat, ship_long, ship_depth)
 
             total_error = 0
 
-            for hydro in hydrophones:
-                # Calculate distance from ship to hydrophone
-                distance = ship_coord.distance(hydro.coord)
-
-                # Compute expected pressure delta using the inverse model
-                darkship_observed_pressure = (
-                    ship_pressure - AcousticCalculator.calculate_attenuation(distance)
+            for hydro in environment.hydrophones:
+                bellhop_env["depth"] = environment.bathymetry.get_depth_profile(
+                    ship_point, hydro.coord, 10
                 )
+                bellhop_env["tx_depth"] = ship_point.depth
+                bellhop_env["rx_depth"] = hydro.coord.depth
+
+                attenuation = AcousticCalculator.calculate_attenuation(bellhop_env)
+
+                darkship_observed_pressure = ship_pressure - attenuation
 
                 # Computing the observed value as the sum of the expected value and the darkship observed pressure
                 darkship_observed_linear = AcousticCalculator.db_to_linear(
@@ -50,9 +55,9 @@ class DarkShipTracker:
             return total_error
 
         # Initial guess (centered in the middle of hydrophones)
-        lat = np.mean([h.coord.latitude for h in hydrophones])
-        long = np.mean([h.coord.longitude for h in hydrophones])
-        depth = np.mean([h.coord.depth for h in hydrophones])
+        lat = np.mean([h.coord.latitude for h in environment.hydrophones])
+        long = np.mean([h.coord.longitude for h in environment.hydrophones])
+        depth = np.mean([h.coord.depth for h in environment.hydrophones])
 
         DEFAULT_PRESSURE = 150
 

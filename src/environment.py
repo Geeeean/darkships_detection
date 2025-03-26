@@ -52,14 +52,18 @@ class Environment:
         :param self: environment
         """
 
-        env = create_env2d()
+        env = create_env2d(type="2D")
 
         for hydro in self.hydrophones:
             total_observed_linear = 0.0
             total_expected_linear = 0.0
 
             for ship in self.ships:
-                env['depth'] = self.bathymetry.get_depth_profile(ship.coord, hydro.coord, 10)
+                env["depth"] = self.bathymetry.get_depth_profile(
+                    ship.coord, hydro.coord, 10
+                )
+                env["tx_depth"] = ship.coord.depth
+                env["rx_depth"] = hydro.coord.depth
 
                 # Calculate linear pressure received from the ship
                 received_pressure = AcousticCalculator.calculate_linear_pressure(

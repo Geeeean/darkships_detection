@@ -37,7 +37,7 @@ class Bathymetry:
 
     def get_depth_profile(
         self, start_coords: Point, end_coords: Point, num_points: int = 10
-    ) -> List[List[float]]:
+    ):
         """
         Generates a depth profile between two points with distances from start point.
 
@@ -79,4 +79,4 @@ class Bathymetry:
             profile.append([cumulative_distance, point.depth])
             prev_point = point
 
-        return profile
+        return np.array(profile)[:, [0, 1]]

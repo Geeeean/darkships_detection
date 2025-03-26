@@ -1,5 +1,6 @@
 from math import log10
 import arlpy.uwapm as pm
+import numpy as np
 
 from hydrophone import Hydrophone
 from ship import Ship
@@ -25,13 +26,15 @@ class AcousticCalculator:
         return 20 * log10(pressure_linear + 1e-12)  # Add 1e-12 to avoid log(0)
 
     @staticmethod
-    def calculate_attenuation(distance: float):
+    def calculate_attenuation(env):
         """
         Calculate the attenuation of acoustic pressure due to geometric spreading.
         :param distance: Distance between the source and the receiver in meters.
         :return: Attenuation in dB.
         """
-        return 20 * log10(distance + 1e-9)  # Avoid log(0)
+        pm.check_env2d(env)
+        attenuation = np.abs(pm.compute_transmission_loss(env=env).values[0][0]) * 10 ** 6
+        return AcousticCalculator.linear_to_db(attenuation)
 
     @staticmethod
     def calculate_linear_pressure(hydro: Hydrophone, ship: Ship, env):
@@ -42,11 +45,8 @@ class AcousticCalculator:
         :return: Linear pressure in µPa.
         """
 
-        # Distance between the hydrophone and the ship
-        distance = hydro.coord.distance(ship.coord)
-
         # calculate attenuation of the pressure based on the distance
-        attenuation = AcousticCalculator.calculate_attenuation(distance)
+        attenuation = AcousticCalculator.calculate_attenuation(env)
 
         received_pressure_db = ship.base_pressure - attenuation
 
