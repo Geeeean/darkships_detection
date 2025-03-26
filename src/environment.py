@@ -1,3 +1,4 @@
+from arlpy.uwapm import create_env2d
 from acoustic_calculator import AcousticCalculator
 from bathymetry import Bathymetry
 from hydrophone import Hydrophone
@@ -50,6 +51,9 @@ class Environment:
         Calculate expected and observed pressures for all hydrophones.
         :param self: environment
         """
+
+        env = create_env2d()
+
         for hydro in self.hydrophones:
             total_observed_linear = 0.0
             total_expected_linear = 0.0
@@ -57,7 +61,7 @@ class Environment:
             for ship in self.ships:
                 # Calculate linear pressure received from the ship
                 received_pressure = AcousticCalculator.calculate_linear_pressure(
-                    hydro, ship
+                    hydro, ship, env
                 )
 
                 # Sum the linear pressures

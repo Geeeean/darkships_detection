@@ -1,4 +1,3 @@
-import numpy as np
 from math import log10
 import arlpy.uwapm as pm
 
@@ -35,9 +34,7 @@ class AcousticCalculator:
         return 20 * log10(distance + 1e-9)  # Avoid log(0)
 
     @staticmethod
-    def calculate_linear_pressure(
-        hydro: Hydrophone, ship: Ship
-    ):
+    def calculate_linear_pressure(hydro: Hydrophone, ship: Ship, env):
         """
         Calculate the linear pressure received by a hydrophone from a ship.
         :param hydro: Hydrophone object with x, y coordinates.
@@ -57,7 +54,6 @@ class AcousticCalculator:
         received_pressure_linear = AcousticCalculator.db_to_linear(received_pressure_db)
 
         return received_pressure_linear
-
 
     @staticmethod
     def calculate_distance_from_pressure(
