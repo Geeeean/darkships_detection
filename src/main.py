@@ -1,15 +1,14 @@
 import sys
-from simulation import SimulationManager
+from simulation import Simulation
 
 
 def main():
     config_path = get_config_path()
-    sim_manager = SimulationManager(config_path)
+    sim = Simulation(config_path)
 
-    sim_manager.initialize_environment()
-    sim_manager.estimate_ds_positions()
-
-    sim_manager.plot_simulation()
+    sim.initialize_environment()
+    sim.start()
+    sim.plot()
 
 
 def get_config_path():

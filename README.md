@@ -74,6 +74,7 @@ ships_config:
   depth_range: [0, 25]              # [m]
 ```
 
+
 ### Instructions
 - #### Environment Area
 The area parameter defines the bounding box for the region of interest. It is defined by the minimum and maximum latitudes and longitudes (lat_min, lat_max, long_min, long_max).

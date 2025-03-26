@@ -35,7 +35,9 @@ class AcousticCalculator:
         return 20 * log10(distance + 1e-9)  # Avoid log(0)
 
     @staticmethod
-    def calculate_linear_pressure(hydro: Hydrophone, ship: Ship):
+    def calculate_linear_pressure(
+        hydro: Hydrophone, ship: Ship
+    ):
         """
         Calculate the linear pressure received by a hydrophone from a ship.
         :param hydro: Hydrophone object with x, y coordinates.
@@ -56,43 +58,6 @@ class AcousticCalculator:
 
         return received_pressure_linear
 
-    @staticmethod
-    def calculate_pressures(
-        hydrophones: list[Hydrophone], ships: list[Ship], noise_level: float = 0.0
-    ):
-        """
-        Calculate expected and observed pressures for all hydrophones.
-        :param hydrophones: List of hydrophone objects.
-        :param ships: List of ship objects.
-        :param config: Configuration dictionary.
-        :param include_base_noise_level: Whether to include random noise in the observed pressure.
-        """
-        for hydro in hydrophones:
-            total_observed_linear = 0.0
-            total_expected_linear = 0.0
-
-            for ship in ships:
-                # Calculate linear pressure received from the ship
-                received_pressure = AcousticCalculator.calculate_linear_pressure(
-                    hydro, ship
-                )
-
-                # Sum the linear pressures
-                total_observed_linear += received_pressure
-                if not ship.is_dark:
-                    total_expected_linear += received_pressure
-
-            # Convert total observed pressure to dB re 1 µPa
-            hydro.observed_pressure = AcousticCalculator.linear_to_db(
-                total_observed_linear
-            )
-
-            hydro.observed_pressure += np.random.normal(0, noise_level)
-
-            # Convert total expected pressure to dB re 1 µPa
-            hydro.expected_pressure = AcousticCalculator.linear_to_db(
-                total_expected_linear
-            )
 
     @staticmethod
     def calculate_distance_from_pressure(
