@@ -1,4 +1,3 @@
-from arlpy import uwapm as pm
 import numpy as np
 from scipy.optimize import minimize
 
@@ -17,21 +16,16 @@ class DarkShipTracker:
         :return: Estimated (x, y) position of the ship and estimated base pressure.
         """
 
-        bellhop_env = pm.create_env2d()
-
         def loss_function(params: list[float]):
             """Calculate error between estimated and observed pressure deltas."""
+
             ship_lat, ship_long, ship_depth, ship_pressure = params
             ship_point = Point(ship_lat, ship_long, ship_depth)
 
             total_error = 0
 
             for hydro in environment.hydrophones:
-                bellhop_env["depth"] = environment.bathymetry.get_depth_profile(
-                    ship_point, hydro.coord, 10
-                )
-                bellhop_env["tx_depth"] = ship_point.depth
-                bellhop_env["rx_depth"] = hydro.coord.depth
+                bellhop_env = environment.get_bellhop_env(ship_point, hydro.coord)
 
                 attenuation = AcousticCalculator.calculate_attenuation(bellhop_env)
 
