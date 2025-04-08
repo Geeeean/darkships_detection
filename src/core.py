@@ -1,9 +1,8 @@
 import numpy as np
-from scipy.optimize import minimize
-
 from acoustic_calculator import AcousticCalculator
 from point import Point
 from environment import Environment
+from scipy.optimize import minimize
 
 
 class DarkShipTracker:

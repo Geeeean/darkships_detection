@@ -61,8 +61,6 @@ class AcousticCalculator:
             ship_pressure
         )  # [µPa/√Hz]
         tot_pressure = ship_linear_pressure * sqrt(bandwith)  # [µPa]
-        # print(f"A {tot_pressure}")
-        tot_pressure = 100000
 
         return tot_pressure / attenuation_linear  # [µPa]
 

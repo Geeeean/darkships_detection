@@ -14,10 +14,6 @@ GeoBoundingBox: TypeAlias = tuple[
     float, float, float, float
 ]  # lat_min, lat_max, lon_min, lon_max
 
-# constants
-bandwith = 100  # [Hz]
-frequencies = [100, 500, 1000]  # [Hz]
-
 
 class Environment:
     """Container for environment data"""
@@ -39,6 +35,10 @@ class Environment:
         self.ships = []
         self.hydrophones = []
         self.bellhop_env = create_env2d()
+
+        # constants
+        self.bandwith = 100  # [Hz]
+        self.frequencies = [100, 500, 1000]  # [Hz]
 
     def get_random_coordinates(self):
         lat_rand = np.random.uniform(self.area[0], self.area[1])
@@ -71,11 +71,11 @@ class Environment:
             for ship in self.ships:
                 # Calculate linear pressure received from the ship
                 p_tot = 0
-                for frequency in frequencies:
+                for frequency in self.frequencies:
                     env = self.get_bellhop_env(ship.coord, hydro.coord, frequency)
                     p_tot += (
                         AcousticCalculator.calculate_linear_pressure(
-                            frequency, ship_density, bandwith, env
+                            frequency, ship_density, self.bandwith, env
                         )
                         ** 2
                     )
