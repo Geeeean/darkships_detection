@@ -1,9 +1,6 @@
-from math import log10
+from math import log10, sqrt
 import arlpy.uwapm as pm
 import numpy as np
-
-from hydrophone import Hydrophone
-from ship import Ship
 
 
 class AcousticCalculator:
@@ -33,42 +30,54 @@ class AcousticCalculator:
         :return: Attenuation in dB.
         """
         pm.check_env2d(env)
-        attenuation = np.abs(pm.compute_transmission_loss(env=env).values[0][0]) * 10 ** 6
-        return AcousticCalculator.linear_to_db(attenuation)
+        tl_complex = pm.compute_transmission_loss(env=env, mode="incoherent").values[0][0]
+        return -20 * np.log10(np.abs(tl_complex))
 
     @staticmethod
-    def calculate_linear_pressure(hydro: Hydrophone, ship: Ship, env):
+    def calculate_linear_pressure(
+        frequency: float, ship_density: float, bandwith: float, env
+    ):
         """
         Calculate the linear pressure received by a hydrophone from a ship.
-        :param hydro: Hydrophone object with x, y coordinates.
-        :param ship: Ship object with x, y coordinates and base pressure level.
-        :return: Linear pressure in µPa.
+        :param frequency: Central frequency in Hz
+        :param ship_density: Ship density in ships/km²
+        :param bandwidth: Frequency bandwidth in Hz
+        :param env: Bellhop environment object
+        :return: Linear pressure in µPa
         """
 
         # calculate attenuation of the pressure based on the distance
-        attenuation = AcousticCalculator.calculate_attenuation(env)
+        attenuation = AcousticCalculator.calculate_attenuation(env)  # [dB]
+        attenuation_linear = AcousticCalculator.db_to_linear(
+            attenuation
+        )  # [adimensional]
 
-        received_pressure_db = ship.base_pressure - attenuation
+        print(f"ATTENUATION {attenuation}dB")
 
-        # Convert received pressure from dB to linear scale (µPa)
-        received_pressure_linear = AcousticCalculator.db_to_linear(received_pressure_db)
+        ship_pressure = AcousticCalculator.shipping_noise_ross(
+            frequency, ship_density
+        )  # [dB re µPa/√Hz]
+        ship_linear_pressure = AcousticCalculator.db_to_linear(
+            ship_pressure
+        )  # [µPa/√Hz]
+        tot_pressure = ship_linear_pressure * sqrt(bandwith)  # [µPa]
+        # print(f"A {tot_pressure}")
+        tot_pressure = 100000
 
-        return received_pressure_linear
+        return tot_pressure / attenuation_linear  # [µPa]
 
     @staticmethod
-    def calculate_distance_from_pressure(
-        hydro_pressure: float, ship_base_pressure: float
-    ):
+    def shipping_noise_ross(frequency, ship_density):
         """
-        Calculate the distance from a hydrophone to a ship based on the received pressure.
+        Compute ship noise using Ross formula
 
-        :param hydro_pressure: Observed acoustic pressure at the hydrophone (dB).
-        :param ship_base_pressure: Base acoustic pressure of the ship (dB).
-        :return: Estimated distance (in the same unit as used in original calculations).
+        Args:
+            frequency (float): [Hz]
+            ship_density (float): [ship/km²]
+
+        Returns:
+            nl: Ship noise in dB re µPa/√Hz.
         """
-
-        # Compute the distance
-        log_distance = (ship_base_pressure - hydro_pressure) / 20
-        distance = 10**log_distance - 1e-9
-
-        return max(distance, 0)  # Ensure distance is non-negative
+        f_kHz = frequency / 1000  # Hz -> KHz
+        nl = 40 + 20 * np.log10(f_kHz) - 17 * np.log10(ship_density + 1e-12)
+        return nl

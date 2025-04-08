@@ -74,7 +74,7 @@ class Bathymetry:
         prev_point = Point(start_coords.latitude, start_coords.longitude, start_depth)
 
         for point in intermediate_points[1:]:
-            segment_distance = prev_point.distance(point)
+            segment_distance = prev_point.distance_2d(point)
             cumulative_distance += segment_distance
             profile.append([cumulative_distance, point.depth])
             prev_point = point

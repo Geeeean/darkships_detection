@@ -1,3 +1,4 @@
+from math import pi, sqrt
 from arlpy.uwapm import check_env2d, create_env2d
 from acoustic_calculator import AcousticCalculator
 from bathymetry import Bathymetry
@@ -12,6 +13,10 @@ from typing import Any, TypeAlias
 GeoBoundingBox: TypeAlias = tuple[
     float, float, float, float
 ]  # lat_min, lat_max, lon_min, lon_max
+
+# constants
+bandwith = 100  # [Hz]
+frequencies = [100, 500, 1000]  # [Hz]
 
 
 class Environment:
@@ -59,30 +64,43 @@ class Environment:
             total_observed_linear = 0.0
             total_expected_linear = 0.0
 
-            for ship in self.ships:
-                env = self.get_bellhop_env(ship.coord, hydro.coord)
+            ship_density = self.calculate_ship_density(hydro)
+            print(f"HYDRO {hydro.id}, ship density: {ship_density}")
+            # print(ship_density)
 
+            for ship in self.ships:
                 # Calculate linear pressure received from the ship
-                received_pressure = AcousticCalculator.calculate_linear_pressure(
-                    hydro, ship, env
-                )
+                p_tot = 0
+                for frequency in frequencies:
+                    env = self.get_bellhop_env(ship.coord, hydro.coord, frequency)
+                    p_tot += (
+                        AcousticCalculator.calculate_linear_pressure(
+                            frequency, ship_density, bandwith, env
+                        )
+                        ** 2
+                    )
+
+                p_tot = sqrt(p_tot)
 
                 # Sum the linear pressures
-                total_observed_linear += received_pressure
+                total_observed_linear += p_tot
                 if not ship.is_dark:
-                    total_expected_linear += received_pressure
-
+                    total_expected_linear += p_tot
 
             # Convert total observed pressure to dB re 1 µPa
             hydro.observed_pressure = AcousticCalculator.linear_to_db(
                 total_observed_linear
             )
 
-            hydro.observed_pressure += np.random.normal(0, self.noise_level)
+            # hydro.observed_pressure += np.random.normal(0, self.noise_level)
 
             # Convert total expected pressure to dB re 1 µPa
             hydro.expected_pressure = AcousticCalculator.linear_to_db(
                 total_expected_linear
+            )
+
+            print(
+                f"HYDRO {hydro.id} is receiving {hydro.observed_pressure} | OBSERVED LINEAR {total_observed_linear} | EXPECTED LINEAR {total_expected_linear}\n"
             )
 
     def add_ship(self, ship: Ship):
@@ -91,13 +109,27 @@ class Environment:
     def add_hydrophone(self, hydrophone: Hydrophone):
         self.hydrophones.append(hydrophone)
 
-    def get_bellhop_env(self, ship_coord: Point, hydro_coord: Point):
+    def get_bellhop_env(self, ship_coord: Point, hydro_coord: Point, frequency: float):
         env = create_env2d()
+
         env["depth"] = self.bathymetry.get_depth_profile(ship_coord, hydro_coord, 10)
         env["tx_depth"] = ship_coord.depth
         env["rx_depth"] = hydro_coord.depth
-        #env["rx_range"] = ship_coord.distance(hydro_coord)
+        env["frequency"] = frequency
+        env["rx_range"] = ship_coord.distance_2d(hydro_coord)
 
-        # check_env2d(env)
+        check_env2d(env)
 
         return env
+
+    def calculate_ship_density(self, hydro: Hydrophone):
+        counter = 0
+        radius = 50  # [km]
+
+        for ship in self.ships:
+            if (
+                ship.coord.distance_2d(hydro.coord) < radius * 1000
+            ):  # radius [km] -> [m]
+                counter += 1
+
+        return counter / (pi * radius**2)

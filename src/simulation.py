@@ -2,14 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import yaml
 
-import bathymetry
 from environment import Environment, GeoBoundingBox
 
 import cartopy.crs as ccrs
 from cartopy.feature import NaturalEarthFeature
 
 from utils import Utils
-from acoustic_calculator import AcousticCalculator
 from core import DarkShipTracker
 
 from hydrophone import Hydrophone
@@ -55,7 +53,7 @@ class Simulation:
 
     def start(self):
         self.environment.calculate_pressures()
-        self.estimate_ds_positions()
+        #self.estimate_ds_positions()
 
     def estimate_ds_positions(self):
         est_pos = DarkShipTracker.mlat(self.environment)
@@ -171,9 +169,6 @@ class Simulation:
             depth=ship_data["depth"],
             speed=ship_data["speed"],
             is_dark=is_dark,
-            base_pressure=ship_data.get(
-                "base_pressure", 140 + 0.5 * ship_data["speed"]  # Default formula
-            ),
         )
 
     def _create_random_ship(
@@ -269,7 +264,6 @@ class Simulation:
             f"Ship {s.id}\n"
             f"Position: ({s.coord.latitude}, {s.coord.longitude})\n"
             f"Speed: {s.speed:.2f} knots\n"
-            f"Base ac pressure: {s.base_pressure:.2f} dB\n"
             f"Is Dark: {s.is_dark}"
             for s in self.environment.ships
         ]

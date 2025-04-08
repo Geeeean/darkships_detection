@@ -19,6 +19,9 @@ class Point:
         delta_depth: float = abs(self.depth - other.depth)
         return sqrt(d2d**2 + delta_depth**2)
 
+    def distance_2d(self, other: "Point") -> float:
+        return geodesic(self.coord, other.coord).meters
+
     @property
     def latitude(self):
         return self.coord.latitude
