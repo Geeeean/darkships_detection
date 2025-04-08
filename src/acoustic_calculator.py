@@ -29,9 +29,8 @@ class AcousticCalculator:
         :param distance: Distance between the source and the receiver in meters.
         :return: Attenuation in dB.
         """
-        pm.check_env2d(env)
         tl_complex = pm.compute_transmission_loss(env=env, mode="incoherent").values[0][0]
-        return -20 * np.log10(np.abs(tl_complex))
+        return -20 * np.log10(np.abs(tl_complex) + 1e-12)
 
     @staticmethod
     def calculate_linear_pressure(
@@ -52,7 +51,7 @@ class AcousticCalculator:
             attenuation
         )  # [adimensional]
 
-        print(f"ATTENUATION {attenuation}dB")
+        print(f"ATTENUATION {attenuation} dB")
 
         ship_pressure = AcousticCalculator.shipping_noise_ross(
             frequency, ship_density

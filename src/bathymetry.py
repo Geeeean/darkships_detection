@@ -76,7 +76,17 @@ class Bathymetry:
         for point in intermediate_points[1:]:
             segment_distance = prev_point.distance_2d(point)
             cumulative_distance += segment_distance
-            profile.append([cumulative_distance, point.depth])
+            if cumulative_distance - profile[-1][0] > 1:
+                profile.append([cumulative_distance, point.depth])
             prev_point = point
 
-        return np.array(profile)[:, [0, 1]]
+        bathy = np.array(profile)[:, [0, 1]]
+
+        return bathy
+
+    @staticmethod
+    def bellhop_sanitized(bathy):
+        if (len(bathy) == 1):
+            return bathy[0][1]
+
+        return bathy

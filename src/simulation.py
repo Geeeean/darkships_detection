@@ -53,7 +53,7 @@ class Simulation:
 
     def start(self):
         self.environment.calculate_pressures()
-        #self.estimate_ds_positions()
+        self.estimate_ds_positions()
 
     def estimate_ds_positions(self):
         est_pos = DarkShipTracker.mlat(self.environment)

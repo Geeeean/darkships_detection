@@ -1,9 +1,6 @@
 import sys
 
-from pandas import pandas
 from simulation import Simulation
-from arlpy import uwapm as pm
-import numpy as np
 
 
 def main():
@@ -13,6 +10,7 @@ def main():
     sim.initialize_environment()
     sim.start()
     sim.plot()
+
 
 def get_config_path():
     if len(sys.argv) < 2:

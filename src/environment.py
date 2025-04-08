@@ -1,5 +1,5 @@
-from math import pi, sqrt
-from arlpy.uwapm import check_env2d, create_env2d
+from math import ceil, floor, pi, sqrt
+from arlpy.uwapm import check_env2d, create_env2d, print_env
 from acoustic_calculator import AcousticCalculator
 from bathymetry import Bathymetry
 from hydrophone import Hydrophone
@@ -65,8 +65,7 @@ class Environment:
             total_expected_linear = 0.0
 
             ship_density = self.calculate_ship_density(hydro)
-            print(f"HYDRO {hydro.id}, ship density: {ship_density}")
-            # print(ship_density)
+            # print(f"HYDRO {hydro.id}, ship density: {ship_density}")
 
             for ship in self.ships:
                 # Calculate linear pressure received from the ship
@@ -99,9 +98,9 @@ class Environment:
                 total_expected_linear
             )
 
-            print(
-                f"HYDRO {hydro.id} is receiving {hydro.observed_pressure} | OBSERVED LINEAR {total_observed_linear} | EXPECTED LINEAR {total_expected_linear}\n"
-            )
+            # print(
+            #     f"HYDRO {hydro.id} is receiving {hydro.observed_pressure} | OBSERVED LINEAR {total_observed_linear} | EXPECTED LINEAR {total_expected_linear}\n"
+            # )
 
     def add_ship(self, ship: Ship):
         self.ships.append(ship)
@@ -112,11 +111,13 @@ class Environment:
     def get_bellhop_env(self, ship_coord: Point, hydro_coord: Point, frequency: float):
         env = create_env2d()
 
-        env["depth"] = self.bathymetry.get_depth_profile(ship_coord, hydro_coord, 10)
+        bathy = self.bathymetry.get_depth_profile(ship_coord, hydro_coord, 10)
+        env["depth"] = Bathymetry.bellhop_sanitized(bathy)
+
         env["tx_depth"] = ship_coord.depth
         env["rx_depth"] = hydro_coord.depth
         env["frequency"] = frequency
-        env["rx_range"] = ship_coord.distance_2d(hydro_coord)
+        env["rx_range"] = floor(ship_coord.distance_2d(hydro_coord))
 
         check_env2d(env)
 

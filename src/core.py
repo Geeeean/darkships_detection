@@ -1,3 +1,5 @@
+from math import sqrt
+from arlpy.uwapm import print_env
 import numpy as np
 from acoustic_calculator import AcousticCalculator
 from point import Point
@@ -18,22 +20,28 @@ class DarkShipTracker:
         def loss_function(params: list[float]):
             """Calculate error between estimated and observed pressure deltas."""
 
-            ship_lat, ship_long, ship_depth, ship_pressure = params
+            ship_lat, ship_long, ship_depth = params
             ship_point = Point(ship_lat, ship_long, ship_depth)
 
             total_error = 0
 
             for hydro in environment.hydrophones:
-                bellhop_env = environment.get_bellhop_env(ship_point, hydro.coord)
+                ship_density = environment.calculate_ship_density(hydro)
 
-                attenuation = AcousticCalculator.calculate_attenuation(bellhop_env)
+                p_tot = 0
+                for frequency in environment.frequencies:
+                    env = environment.get_bellhop_env(
+                        ship_point, hydro.coord, frequency
+                    )
+                    p_tot += (
+                        AcousticCalculator.calculate_linear_pressure(
+                            frequency, ship_density, environment.bandwith, env
+                        )
+                        ** 2
+                    )
 
-                darkship_observed_pressure = ship_pressure - attenuation
+                darkship_observed_linear = sqrt(p_tot)
 
-                # Computing the observed value as the sum of the expected value and the darkship observed pressure
-                darkship_observed_linear = AcousticCalculator.db_to_linear(
-                    darkship_observed_pressure
-                )
                 hydro_expected_linear = AcousticCalculator.db_to_linear(
                     hydro.expected_pressure
                 )
@@ -52,12 +60,8 @@ class DarkShipTracker:
         long = np.mean([h.coord.longitude for h in environment.hydrophones])
         depth = np.mean([h.coord.depth for h in environment.hydrophones])
 
-        DEFAULT_PRESSURE = 150
-
         # Optimize (x, y) position and base acoustic pressure of the ship
-        result = minimize(
-            loss_function, [lat, long, depth, DEFAULT_PRESSURE], method="Nelder-Mead"
-        )
+        result = minimize(loss_function, [lat, long, depth], method="Nelder-Mead")
 
         # Return estimated ship position and its estimated base pressure
         return result.x[:3], result.x[2]
