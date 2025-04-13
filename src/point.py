@@ -24,8 +24,20 @@ class Point:
 
     @property
     def latitude(self):
+        """Getter for latitude."""
         return self.coord.latitude
 
     @property
     def longitude(self):
+        """Getter for longitude."""
         return self.coord.longitude
+
+    @latitude.setter
+    def latitude(self, value: float):
+        """Setter for latitude."""
+        self.coord = Geopoint(value, self.coord.longitude)
+
+    @longitude.setter
+    def longitude(self, value: float):
+        """Setter for longitude."""
+        self.coord = Geopoint(self.coord.latitude, value)

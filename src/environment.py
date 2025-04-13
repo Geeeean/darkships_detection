@@ -26,14 +26,20 @@ class Environment:
     bellhop_env: Any
 
     def __init__(
-        self, area: GeoBoundingBox, bathymetry: Bathymetry, noise_level: float
+        self,
+        area: GeoBoundingBox,
+        bathymetry: Bathymetry,
+        noise_level: float,
+        hydrophones=None,
+        ships=None,
     ):
         self.area = area
         self.bathymetry = bathymetry
         self.noise_level = noise_level
 
-        self.ships = []
-        self.hydrophones = []
+        self.hydrophones = hydrophones if hydrophones is not None else []
+        self.ships = ships if ships is not None else []
+
         self.bellhop_env = create_env2d()
 
         # constants
