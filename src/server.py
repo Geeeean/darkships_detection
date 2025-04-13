@@ -1,5 +1,6 @@
-from fastapi import FastAPI
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi import FastAPI, Request
+from pathlib import Path
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from multiprocessing import Queue
 from threading import Thread
@@ -15,15 +16,23 @@ class Server:
         self.sim_status = False
 
         self.app = FastAPI()
-        self.app.mount(
-            "/", StaticFiles(directory="./ui/dist/", html=True), name="static"
-        )
 
         self._add_routes()
+        self._add_fallback()
 
     def _add_routes(self):
-        self.app.get("/data")(self.get_latest_data)
-        self.app.post("/toggle")(self.toggle)
+        self.app.get("/api/data")(self.get_latest_data)
+        self.app.post("/api/toggle")(self.toggle)
+        self.app.mount("/assets", StaticFiles(directory="./ui/dist/assets"), name="assets")
+
+    def _add_fallback(self):
+        # Serve index.html for all unmatched GET routes
+        @self.app.get("/{full_path:path}")
+        async def serve_spa(full_path: str, request: Request):
+            index_path = Path("./ui/dist/index.html")
+            if index_path.exists():
+                return FileResponse(index_path)
+            return JSONResponse(content={"error": "index.html not found"}, status_code=404)
 
     def _start_queue_reader(self):
         def read_loop():
