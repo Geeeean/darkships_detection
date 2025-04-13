@@ -1,6 +1,8 @@
 import sys
+import threading
 
 from simulation import Simulation
+import multiprocessing
 
 
 def main():
@@ -9,7 +11,11 @@ def main():
 
     sim.initialize_environment()
     sim.start()
-    sim.plot()
+
+    p = multiprocessing.Process(target=sim.estimate_ds_positions)
+    p.start()
+
+    # sim.plot()
 
 
 def get_config_path():
@@ -22,4 +28,5 @@ def get_config_path():
 
 
 if __name__ == "__main__":
+    multiprocessing.set_start_method('spawn')
     main()

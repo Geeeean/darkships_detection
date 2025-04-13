@@ -19,7 +19,6 @@ class DarkShipTracker:
 
         def loss_function(params: list[float]):
             """Calculate error between estimated and observed pressure deltas."""
-
             ship_lat, ship_long, ship_depth = params
             ship_point = Point(ship_lat, ship_long, ship_depth)
 
@@ -60,8 +59,12 @@ class DarkShipTracker:
         long = np.mean([h.coord.longitude for h in environment.hydrophones])
         depth = np.mean([h.coord.depth for h in environment.hydrophones])
 
+        print("MLAT START...")
+
         # Optimize (x, y) position and base acoustic pressure of the ship
         result = minimize(loss_function, [lat, long, depth], method="Nelder-Mead")
+
+        print("MLAT END")
 
         # Return estimated ship position and its estimated base pressure
         return result.x[:3], result.x[2]

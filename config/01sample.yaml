@@ -5,13 +5,13 @@ environment:
 hydrophones_config:
   # DATA FOR MANUAL HYDROPHONES GENERATION
   hydrophones:
-    - coordinates: [11.0, 83.5]      # Hydrophone 1 (lat: 11.0, lon: 83.5)
+    - coordinates: [11.0, 83.5]     # Hydrophone 1
       max_range: 50                 # [km]
       depth: 20                     # [m]
-    - coordinates: [11.15, 83.65]     # Hydrophone 2 (lat: 14.0, lon: 94.0)
+    - coordinates: [11, 84]         # Hydrophone 2
       max_range: 30                 # [km]
       depth: 30                     # [m]
-    - coordinates: [11.3, 83.8]     # Hydrophone 2 (lat: 14.0, lon: 94.0)
+    - coordinates: [11.3, 83.8]     # Hydrophone 3
       max_range: 30                 # [km]
       depth: 30                     # [m]
 
@@ -25,15 +25,15 @@ hydrophones_config:
 ships_config:
   # DATA FOR MANUAL SHIPS GENERATION
   ais_ships:                        # Manual ais ships
-    # - coordinates: [11.8, 83.9]     # AIS Ship 1 (lat: 11.5, lon: 83.8)
-    #   speed: 10                     # [kt]
-    #   depth: 10                     # [m]
-    - coordinates: [11.1, 84]     # AIS Ship 2 (lat: 14.5, lon: 94.0)
+    - coordinates: [11.8, 83.9]     # AIS Ship 1
+      speed: 10                     # [kt]
+      depth: 10                     # [m]
+    - coordinates: [11.1, 84]       # AIS Ship 2
       speed: 10                     # [kt]
       depth: 10                     # [m]
 
   dark_ships:                       # Manual dark ships
-    - coordinates: [11.11, 83.6]     # Dark Ship 1 (lat: 12.0, lon: 84.5)
+    - coordinates: [11.11, 83.6]    # Dark Ship 1
       speed: 15                     # kt
       depth: 10                     # [m]
 

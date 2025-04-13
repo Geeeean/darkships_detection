@@ -1,5 +1,5 @@
-from math import ceil, floor, pi, sqrt
-from arlpy.uwapm import check_env2d, create_env2d, print_env
+from math import floor, pi, sqrt
+from arlpy.uwapm import check_env2d, create_env2d
 from acoustic_calculator import AcousticCalculator
 from bathymetry import Bathymetry
 from hydrophone import Hydrophone
@@ -65,7 +65,6 @@ class Environment:
             total_expected_linear = 0.0
 
             ship_density = self.calculate_ship_density(hydro)
-            # print(f"HYDRO {hydro.id}, ship density: {ship_density}")
 
             for ship in self.ships:
                 # Calculate linear pressure received from the ship
@@ -91,16 +90,13 @@ class Environment:
                 total_observed_linear
             )
 
-            # hydro.observed_pressure += np.random.normal(0, self.noise_level)
+            # Adding noise to the observed pressure
+            hydro.observed_pressure += np.random.normal(0, self.noise_level)
 
             # Convert total expected pressure to dB re 1 µPa
             hydro.expected_pressure = AcousticCalculator.linear_to_db(
                 total_expected_linear
             )
-
-            # print(
-            #     f"HYDRO {hydro.id} is receiving {hydro.observed_pressure} | OBSERVED LINEAR {total_observed_linear} | EXPECTED LINEAR {total_expected_linear}\n"
-            # )
 
     def add_ship(self, ship: Ship):
         self.ships.append(ship)

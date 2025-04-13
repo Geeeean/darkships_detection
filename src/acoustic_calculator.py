@@ -51,8 +51,6 @@ class AcousticCalculator:
             attenuation
         )  # [adimensional]
 
-        print(f"ATTENUATION {attenuation} dB")
-
         ship_pressure = AcousticCalculator.shipping_noise_ross(
             frequency, ship_density
         )  # [dB re µPa/√Hz]
