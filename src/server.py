@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from multiprocessing import Queue
 from threading import Thread
 import time
@@ -14,6 +15,9 @@ class Server:
         self.sim_status = False
 
         self.app = FastAPI()
+        self.app.mount(
+            "/", StaticFiles(directory="./ui/dist/", html=True), name="static"
+        )
 
         self._add_routes()
 
