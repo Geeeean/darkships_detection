@@ -168,6 +168,7 @@ class Simulation:
             depth=ship_data["depth"],
             speed=ship_data["speed"],
             is_dark=is_dark,
+            heading=ship_data["heading"],
         )
 
     def _create_random_ship(
@@ -181,6 +182,7 @@ class Simulation:
         lat, long = self.environment.get_random_coordinates()
         depth = np.random.uniform(depth_range[0], depth_range[1])
         speed = np.random.uniform(speed_range[0], speed_range[1])
+        heading = np.random.uniform(0, 360)
 
         return Ship(
             id=self.ship_counter,
@@ -189,6 +191,7 @@ class Simulation:
             depth=depth,
             speed=speed,
             is_dark=is_dark,
+            heading=heading,
         )
 
     def plot_environment(self, map_ax):

@@ -28,14 +28,17 @@ ships_config:
     - coordinates: [11.8, 83.9]     # AIS Ship 1
       speed: 10                     # [kt]
       depth: 10                     # [m]
+      heading: 30                   # [°]
     - coordinates: [11.1, 84]       # AIS Ship 2
       speed: 10                     # [kt]
       depth: 10                     # [m]
+      heading: 270                  # [°]
 
   dark_ships:                       # Manual dark ships
     - coordinates: [11.11, 83.6]    # Dark Ship 1
       speed: 15                     # kt
       depth: 10                     # [m]
+      heading: 120                  # [°]
 
   # DATA FOR RANDOM SHIPS GENERATION
   num_random_ais_ships: 0           # Generate random ais ships
