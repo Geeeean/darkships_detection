@@ -10,7 +10,7 @@ export default function MapView() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await axios.get('/api/data');
+        const res = await axios.get('http://localhost:8000/api/data');
         setData(res.data);
       } catch (err) {
         console.error("Data fetch failed", err);
@@ -24,7 +24,8 @@ export default function MapView() {
   }, []);
 
   if (!data) return <p>Caricamento dati...</p>;
-  return <p>{data}</p>
+  console.log(data)
+  return <p>loaded</p>
 /*
   return (
     <MapContainer
