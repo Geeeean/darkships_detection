@@ -22,11 +22,7 @@ class Simulation:
         self.read = read_queue
         self.write = write_queue
 
-        self.environment = Environment(
-            area=self._get_area(),
-            bathymetry=self._get_bathymetry(),
-            noise_level=self._get_noise_level(),
-        )
+        self.initialize_environment()
 
     def _load_config(self, path: str):
         """Load simulation parameters from YAML file
@@ -41,6 +37,11 @@ class Simulation:
 
     def initialize_environment(self):
         """Create simulation entities from configuration"""
+        self.environment = Environment(
+            area=self._get_area(),
+            bathymetry=self._get_bathymetry(),
+            noise_level=self._get_noise_level(),
+        )
 
         # Create hydrophones
         self._create_manual_hydrophones()
@@ -200,64 +201,79 @@ class Simulation:
         # 2. Compute hydrophone pressures
         self.environment.calculate_pressures()
 
+    def format_for_queue(self):
+        ships_info = [
+            {
+                "id": s.id,
+                "longitude": s.coord.longitude,
+                "latitude": s.coord.latitude,
+                "is_dark": s.is_dark,
+                "heading": s.heading,
+                "speed": s.speed,
+            }
+            for s in self.environment.ships
+        ]
+
+        hydrophones_info = [
+            {
+                "id": h.id,
+                "longitude": h.coord.longitude,
+                "latitude": h.coord.latitude,
+                "observed_pressure": h.observed_pressure,
+            }
+            for h in self.environment.hydrophones
+        ]
+
+        return {
+            "ships": ships_info,
+            "hydrophones": hydrophones_info,
+            "area": self.environment.area,
+        }
+
     def run(self, total_steps, delta_t_sec):
         """Run the simulation"""
         time_spent = 0
-        while self.read.get() != "RUN":
+        self.initialize_environment()
+
+        data = self.format_for_queue()
+        self.write.put(data)
+
+        while self.read.get() != "START":
             pass
 
-        for t in range(total_steps):
+        t = 0
+        while t < total_steps:
             if not self.read.empty():
-                command = (
-                    self.read.get_nowait()
-                )  # Non blocca, prende il comando se disponibile
+                command = self.read.get_nowait()
+
                 if command == "PAUSE":
                     print("[SIM] Pausing simulation")
-                    while command == "PAUSE":
+                    while command != "START":
                         if not self.read.empty():
-                            command = (
-                                self.read.get_nowait()
-                            )  # Controlla continuamente se il comando cambia
-                        time.sleep(
-                            0.1
-                        )  # Aggiungi un po' di sleep per non sovraccaricare la CPU
-
-                elif command == "READY":
-                    print("[SIM] Simulation is ready to continue")
+                            command = self.read.get_nowait()
+                            if command == "RESTART":
+                                print("[SIM] Restarting simulation from pause")
+                                self.initialize_environment()
+                                time_spent = 0
+                                t = 0
+                                data = self.format_for_queue()
+                                self.write.put(data)
+                                continue
+                elif command == "RESTART":
+                    print("[SIM] Restarting simulation")
+                    self.initialize_environment()
+                    time_spent = 0
+                    t = 0
+                    data = self.format_for_queue()
+                    self.write.put(data)
+                    continue
 
             print(f"[SIM] Time elapsed {time_spent}s")
             time_spent += delta_t_sec
 
             self.update_simulation(t * delta_t_sec)
 
-            # Estrai i dati aggiornati per inviarli alla coda
-            ships_info = [
-                {
-                    "id": s.id,
-                    "longitude": s.coord.longitude,
-                    "latitude": s.coord.latitude,
-                    "is_dark": s.is_dark,
-                }
-                for s in self.environment.ships
-            ]
+            data = self.format_for_queue()
+            self.write.put(data)
 
-            hydrophones_info = [
-                {
-                    "id": h.id,
-                    "longitude": h.coord.longitude,
-                    "latitude": h.coord.latitude,
-                    "observed_pressure": h.observed_pressure,
-                }
-                for h in self.environment.hydrophones
-            ]
-
-            updated_data = {
-                "ships": ships_info,
-                "hydrophones": hydrophones_info,
-                "area": self.environment.area,
-            }
-
-            # Invia i dati alla coda
-            self.write.put(updated_data)
-
-            time.sleep(0.1)
+            t += 1

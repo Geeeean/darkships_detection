@@ -27,7 +27,6 @@ def run_simulation(
     config_path, sim_server_queue, server_sim_queue, total_steps, delta_t_sec
 ):
     sim = Simulation(config_path, server_sim_queue, sim_server_queue)
-    sim.initialize_environment()
 
     sim.run(total_steps, delta_t_sec)
 

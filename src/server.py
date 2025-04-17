@@ -38,7 +38,9 @@ class Server:
 
     def _add_routes(self):
         self.app.get("/api/data")(self.get_latest_data)
-        self.app.post("/api/toggle")(self.toggle)
+        self.app.post("/api/start")(self.start)
+        self.app.post("/api/pause")(self.pause)
+        self.app.post("/api/restart")(self.restart)
         self.app.mount(
             "/assets", StaticFiles(directory="./ui/dist/assets"), name="assets"
         )
@@ -72,18 +74,19 @@ class Server:
             return JSONResponse(content={"message": "No data yet"}, status_code=404)
         return self.latest_data
 
-    def toggle(self):
-        msg = ""
+    def start(self):
+        msg = "Simulation started"
+        self.write.put("START")
+        return {"message": msg}
 
-        if self.sim_status:
-            self.write.put("PAUSE")
-            msg = "Simulation paused"
-        else:
-            self.write.put("RUN")
-            msg = "Simulation started"
+    def pause(self):
+        msg = "Simulation paused"
+        self.write.put("PAUSE")
+        return {"message": msg}
 
-        self.sim_status = not self.sim_status
-
+    def restart(self):
+        msg = "Simulation restarted"
+        self.write.put("RESTART")
         return {"message": msg}
 
     def run(self, host="0.0.0.0", port=8000):
