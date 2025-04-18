@@ -29,7 +29,9 @@ class AcousticCalculator:
         :param distance: Distance between the source and the receiver in meters.
         :return: Attenuation in dB.
         """
-        tl_complex = pm.compute_transmission_loss(env=env, mode="incoherent").values[0][0]
+        tl_complex = pm.compute_transmission_loss(env=env, mode="incoherent").values[0][
+            0
+        ]
         return -20 * np.log10(np.abs(tl_complex) + 1e-12)
 
     @staticmethod
@@ -44,12 +46,7 @@ class AcousticCalculator:
         :param env: Bellhop environment object
         :return: Linear pressure in µPa
         """
-
-        # calculate attenuation of the pressure based on the distance
-        attenuation = AcousticCalculator.calculate_attenuation(env)  # [dB]
-        attenuation_linear = AcousticCalculator.db_to_linear(
-            attenuation
-        )  # [adimensional]
+        DELTA_TRESHOLD = 10  # [µPa]
 
         ship_pressure = AcousticCalculator.shipping_noise_ross(
             frequency, ship_density
@@ -58,6 +55,26 @@ class AcousticCalculator:
             ship_pressure
         )  # [µPa/√Hz]
         tot_pressure = ship_linear_pressure * sqrt(bandwith)  # [µPa]
+
+        # Estimating attenuation before running bellhop
+        # bellhop requires high computational cost: high attenuation estim
+        # allows to skip this passage
+        alpha = AcousticCalculator.absorption_coefficient_thorp(frequency)
+        distance_km = env["rx_range"] / 1000  # [km]
+        estimated_tl = 20 * log10(distance_km * 1000) + alpha * distance_km
+        estimated_attenuation = AcousticCalculator.db_to_linear(estimated_tl)
+        estimated_received_pressure = tot_pressure / estimated_attenuation
+
+         # Skip Bellhop: signal too weak to be relevant
+        if estimated_received_pressure < DELTA_TRESHOLD:
+            print("SKIPPING BELLHOP")
+            return 0.0
+
+        # calculate attenuation of the pressure based on the distance
+        attenuation = AcousticCalculator.calculate_attenuation(env)  # [dB]
+        attenuation_linear = AcousticCalculator.db_to_linear(
+            attenuation
+        )  # [adimensional]
 
         return tot_pressure / attenuation_linear  # [µPa]
 
@@ -76,3 +93,20 @@ class AcousticCalculator:
         f_kHz = frequency / 1000  # Hz -> KHz
         nl = 40 + 20 * np.log10(f_kHz) - 17 * np.log10(ship_density + 1e-12)
         return nl
+
+    @staticmethod
+    def absorption_coefficient_thorp(frequency_hz: float) -> float:
+        """
+        Compute frequency-dependent absorption coefficient (Thorp formula).
+        :param frequency_hz: Frequency in Hz
+        :return: Attenuation in dB/km
+        """
+        f = frequency_hz / 1000  # convert to kHz
+
+        alpha = (
+            (0.11 * f**2) / (1 + f**2)
+            + (44 * f**2) / (4100 + f**2)
+            + 0.000275 * f**2
+            + 0.003
+        )
+        return alpha  # [dB/km]
