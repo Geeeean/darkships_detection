@@ -1,6 +1,5 @@
 from multiprocessing import Manager, Queue
 import numpy as np
-import time
 import yaml
 
 from environment import Environment, GeoBoundingBox
@@ -21,6 +20,7 @@ class Simulation:
         self.ship_counter = 1  # Global ship ID counter
         self.read = read_queue
         self.write = write_queue
+        self.status = "pause"
 
         self.initialize_environment()
 
@@ -228,6 +228,7 @@ class Simulation:
             "ships": ships_info,
             "hydrophones": hydrophones_info,
             "area": self.environment.area,
+            "status": self.status,
         }
 
     def run(self, total_steps, delta_t_sec):
@@ -241,12 +242,19 @@ class Simulation:
         while self.read.get() != "START":
             pass
 
+        self.status = "run"
+
         t = 0
         while t < total_steps:
             if not self.read.empty():
                 command = self.read.get_nowait()
 
                 if command == "PAUSE":
+                    self.status = "pause"
+
+                    data = self.format_for_queue()
+                    self.write.put(data)
+
                     print("[SIM] Pausing simulation")
                     while command != "START":
                         if not self.read.empty():
@@ -268,6 +276,7 @@ class Simulation:
                     self.write.put(data)
                     continue
 
+            self.status = "run"
             print(f"[SIM] Time elapsed {time_spent}s")
             time_spent += delta_t_sec
 

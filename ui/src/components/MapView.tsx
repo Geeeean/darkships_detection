@@ -9,41 +9,16 @@ import {
   CircleMarker,
 } from "react-leaflet";
 
-import { useEffect, useState } from "react";
-import axios from "axios";
-
-import { status } from "../App";
 import AisShipSymbol from "./AisShipSymbol";
 
-const REFRESH_INTERVAL = 1000;
-
-type props = { status: status };
+type props = { data: any };
 
 const hydroIcon = new Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/156/156318.png",
   iconSize: [16, 16],
 });
 
-export default function MapView({ status }: props) {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await axios.get("http://localhost:8000/api/data");
-        setData(res.data);
-      } catch (err) {
-        console.error("Data fetch failed", err);
-      }
-    };
-
-    let interval: number = 0;
-    fetchData();
-    interval = setInterval(fetchData, REFRESH_INTERVAL);
-
-    return () => clearInterval(interval);
-  }, [status]);
-
+export default function MapView({ data }: props) {
   if (!data) return <div>Loading...</div>;
 
   const area = data.area;
@@ -60,12 +35,11 @@ export default function MapView({ status }: props) {
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-        //url="https://server.arcgisonline.com/ArcGIS/rest/services/Ocean/World_Ocean_Base/MapServer/tile/{z}/{y}/{x}"
       />
       {ships.map((ship, index: number) => {
         return (
           <AisShipSymbol
-            key={ship.id}
+            key={index}
             id={ship.id.toString()}
             position={[ship.latitude, ship.longitude]}
             heading={ship.heading ?? 0}
@@ -77,6 +51,7 @@ export default function MapView({ status }: props) {
       {hydrophones.map((hydro, index: number) => {
         return (
           <Marker
+            key={-index}
             icon={hydroIcon}
             position={[hydro.latitude, hydro.longitude]}
           ></Marker>
