@@ -220,6 +220,7 @@ class Simulation:
                 "longitude": h.coord.longitude,
                 "latitude": h.coord.latitude,
                 "observed_pressure": h.observed_pressure,
+                "expected_pressure": h.expected_pressure,
             }
             for h in self.environment.hydrophones
         ]
@@ -235,6 +236,7 @@ class Simulation:
         """Run the simulation"""
         time_spent = 0
         self.initialize_environment()
+        self.environment.calculate_pressures()
 
         data = self.format_for_queue()
         self.write.put(data)

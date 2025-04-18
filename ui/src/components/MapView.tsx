@@ -6,10 +6,12 @@ import {
   TileLayer,
   Marker,
   Popup,
+  Tooltip,
   CircleMarker,
 } from "react-leaflet";
 
 import AisShipSymbol from "./AisShipSymbol";
+import { Loader } from "lucide-react";
 
 type props = { data: any };
 
@@ -19,7 +21,12 @@ const hydroIcon = new Icon({
 });
 
 export default function MapView({ data }: props) {
-  if (!data) return <div>Loading...</div>;
+  if (!data)
+    return (
+      <div className="absolute left-1/2 top-1/2 text-primary">
+        <Loader className="animate-spin" />
+      </div>
+    );
 
   const area = data.area;
   const ships = data.ships ?? [];
@@ -54,7 +61,24 @@ export default function MapView({ data }: props) {
             key={-index}
             icon={hydroIcon}
             position={[hydro.latitude, hydro.longitude]}
-          ></Marker>
+          >
+            <Tooltip className="flex flex-col">
+              <p className="font-bold">HYDRO {hydro.id}</p>
+              <p>
+                Expected Pressure{" "}
+                <span className="font-semibold">
+                  {hydro.expected_pressure}dB
+                </span>
+              </p>
+              <p>
+                Observed Pressure{" "}
+                <span className="font-semibold">
+                  {hydro.observed_pressure}dB
+                </span>
+              </p>
+              <p>Delta </p>
+            </Tooltip>
+          </Marker>
         );
       })}
     </MapContainer>
