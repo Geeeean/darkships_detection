@@ -31,7 +31,13 @@ export default function AisShipSymbol({
       heading: degToRads(heading),
       course: degToRads(heading),
     });
-    ship.bindTooltip("TrackSymbol1");
+
+    ship.bindTooltip(
+      `<div style="display: flex; flex-direction: column;">
+      <p style="font-weight: bold;">SHIP ${id}</p>
+      <p>position <span style="font-weight: bold;">[${position}]</span></p>
+  </div>`,
+    );
     ship.addTo(map);
 
     ship.addTo(map);

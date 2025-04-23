@@ -5,9 +5,35 @@ from acoustic_calculator import AcousticCalculator
 from point import Point
 from environment import Environment
 from scipy.optimize import minimize
+from pykalman import KalmanFilter
 
 
 class DarkShipTracker:
+    def kalman_filter(self, environment: Environment, dt: float):
+        transition_matrix = np.array(
+            [
+                [1, 0, dt, 0],  # lat  = lat + v_lat * dt
+                [0, 1, 0, dt],  # lon  = lon + v_lon * dt
+                [0, 0, 1, 0],  # v_lat = costante
+                [0, 0, 0, 1],  # v_lon = costante
+            ]
+        )
+
+        num_hydrophones = len(environment.hydrophones)
+        lat0 = np.mean([h.coord.latitude for h in environment.hydrophones])
+        lon0 = np.mean([h.coord.longitude for h in environment.hydrophones])
+
+        # Dummy observation matrix
+        observation_matrix = [h.observed_pressure for h in environment.hydrophones]
+
+        kf = KalmanFilter(
+            transition_matrices=transition_matrix,
+            observation_matrices=observation_matrix,
+            initial_state_mean=[lat0, lon0, 0, 0],
+            transition_covariance=np.eye(4) * 0.01,
+            observation_covariance=np.eye(num_hydrophones) * 1.0,
+        )
+
     @staticmethod
     def mlat(environment: Environment):
         """
@@ -29,12 +55,14 @@ class DarkShipTracker:
 
                 p_tot = 0
                 for frequency in environment.frequencies:
-                    env = environment.get_bellhop_env(
-                        ship_point, hydro.coord, frequency
-                    )
                     p_tot += (
-                        AcousticCalculator.calculate_linear_pressure(
-                            frequency, ship_density, environment.bandwith, env
+                        environment.ac.calculate_linear_pressure(
+                            frequency,
+                            ship_density,
+                            environment.bandwith,
+                            environment.bathymetry,
+                            ship_point,
+                            hydro.coord,
                         )
                         ** 2
                     )

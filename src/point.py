@@ -10,6 +10,8 @@ class Point:
         depth (float): depth under the sea surface [m]
     """
 
+    TOLERANCE_METERS = 100
+
     def __init__(self, lat: float, long: float, depth: float):
         self.coord: Geopoint = Geopoint(lat, long)
         self.depth: float = depth
@@ -41,3 +43,20 @@ class Point:
     def longitude(self, value: float):
         """Setter for longitude."""
         self.coord = Geopoint(self.coord.latitude, value)
+
+    def __eq__(self, other):
+        if not isinstance(other, Point):
+            return False
+        return self.distance(other) < self.TOLERANCE_METERS
+
+    def __hash__(self):
+        grid_size_deg = 0.0009  # ≈ 100 m
+
+        lat_key = round(self.latitude / grid_size_deg)
+        long_key = round(self.longitude / grid_size_deg)
+        depth_key = self.depth
+
+        return hash((lat_key, long_key, depth_key))
+
+    def __repr__(self):
+        return f"Point(lat={self.latitude:.6f}, long={self.longitude:.6f}, depth={self.depth:.2f})"

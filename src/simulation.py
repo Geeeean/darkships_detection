@@ -1,6 +1,7 @@
 from multiprocessing import Manager, Queue
 import numpy as np
 import yaml
+import time
 
 from environment import Environment, GeoBoundingBox
 
@@ -14,13 +15,19 @@ from bathymetry import Bathymetry
 class Simulation:
     """Handles environment setup and configuration parsing"""
 
-    def __init__(self, config_path: str, read_queue: Queue, write_queue: Queue):
+    def __init__(
+        self,
+        config_path: str,
+        read_queue: Queue,
+        write_queue: Queue,
+        delta_t_sec: float,
+    ):
         self.config = self._load_config(config_path)
-        self.hydrophone_counter = 1  # Global hydrophone ID counter
-        self.ship_counter = 1  # Global ship ID counter
+        self.object_counter = 1  # Global ship and hydro counter
         self.read = read_queue
         self.write = write_queue
         self.status = "pause"
+        self.delta_t_sec = delta_t_sec
 
         self.initialize_environment()
 
@@ -73,7 +80,7 @@ class Simulation:
         for hydro_data in self.config["hydrophones_config"].get("hydrophones", []):
             hydrophone: Hydrophone = self._create_hydrophone_from_data(hydro_data)
             self.environment.add_hydrophone(hydrophone)
-            self.hydrophone_counter += 1
+            self.object_counter += 1
 
     def _create_hydrophone_from_data(self, hydrophone_data) -> Hydrophone:
         """Create hydrophone from YAML configuration data
@@ -82,7 +89,7 @@ class Simulation:
             hydrophone_data (dict): Hydrophone parameters from YAML
         """
         return Hydrophone(
-            id=self.hydrophone_counter,
+            id=self.object_counter,
             lat=hydrophone_data["coordinates"][0],
             long=hydrophone_data["coordinates"][1],
             depth=hydrophone_data["depth"],
@@ -100,7 +107,7 @@ class Simulation:
         for _ in range(num_random):
             hydrophone = self._create_random_hydrophone(max_range_range, depth_range)
             self.environment.add_hydrophone(hydrophone)
-            self.hydrophone_counter += 1
+            self.object_counter += 1
 
     def _create_random_hydrophone(
         self, max_range_range: list[float], depth_range: list[float]
@@ -111,7 +118,7 @@ class Simulation:
         depth = np.random.uniform(depth_range[0], depth_range[1])
 
         return Hydrophone(
-            id=self.hydrophone_counter,
+            id=self.object_counter,
             lat=lat,
             long=long,
             max_range=max_range,
@@ -124,13 +131,13 @@ class Simulation:
         for ship_data in self.config["ships_config"].get("ais_ships", []):
             ship = self._create_ship_from_data(ship_data, False)
             self.environment.add_ship(ship)
-            self.ship_counter += 1
+            self.object_counter += 1
 
         # Process dark ships
         for ship_data in self.config["ships_config"].get("dark_ships", []):
             ship = self._create_ship_from_data(ship_data, True)
             self.environment.add_ship(ship)
-            self.ship_counter += 1
+            self.object_counter += 1
 
     def _create_random_ships(self):
         """Generate random ships to complete configured totals"""
@@ -144,12 +151,12 @@ class Simulation:
         for _ in range(random_ais):
             ship = self._create_random_ship(speed_range, depth_range, False)
             self.environment.add_ship(ship)
-            self.ship_counter += 1
+            self.object_counter += 1
 
         for _ in range(random_dark):
             ship = self._create_random_ship(speed_range, depth_range, True)
             self.environment.add_ship(ship)
-            self.ship_counter += 1
+            self.object_counter += 1
 
     def _create_ship_from_data(self, ship_data, is_dark: bool):
         """Create ship from YAML configuration data
@@ -159,7 +166,7 @@ class Simulation:
             is_dark (bool): Dark ship status
         """
         return Ship(
-            id=self.ship_counter,
+            id=self.object_counter,
             lat=ship_data["coordinates"][0],
             long=ship_data["coordinates"][1],
             depth=ship_data["depth"],
@@ -182,7 +189,7 @@ class Simulation:
         heading = np.random.uniform(0, 360)
 
         return Ship(
-            id=self.ship_counter,
+            id=self.object_counter,
             lat=lat,
             long=long,
             depth=depth,
@@ -232,7 +239,7 @@ class Simulation:
             "status": self.status,
         }
 
-    def run(self, total_steps, delta_t_sec):
+    def run(self, total_steps):
         """Run the simulation"""
         time_spent = 0
         self.initialize_environment()
@@ -248,6 +255,8 @@ class Simulation:
 
         t = 0
         while t < total_steps:
+            loop_start = time.perf_counter()
+
             if not self.read.empty():
                 command = self.read.get_nowait()
 
@@ -264,6 +273,7 @@ class Simulation:
                             if command == "RESTART":
                                 print("[SIM] Restarting simulation from pause")
                                 self.initialize_environment()
+                                self.environment.calculate_pressures()
                                 time_spent = 0
                                 t = 0
                                 data = self.format_for_queue()
@@ -272,6 +282,7 @@ class Simulation:
                 elif command == "RESTART":
                     print("[SIM] Restarting simulation")
                     self.initialize_environment()
+                    self.environment.calculate_pressures()
                     time_spent = 0
                     t = 0
                     data = self.format_for_queue()
@@ -280,11 +291,15 @@ class Simulation:
 
             self.status = "run"
             print(f"[SIM] Time elapsed {time_spent}s")
-            time_spent += delta_t_sec
+            time_spent += self.delta_t_sec
 
-            self.update_simulation(t * delta_t_sec)
+            self.update_simulation(t * self.delta_t_sec)
 
             data = self.format_for_queue()
             self.write.put(data)
+
+            elapsed = time.perf_counter() - loop_start
+            if elapsed < 1.0:
+                time.sleep(1.0 - elapsed)
 
             t += 1

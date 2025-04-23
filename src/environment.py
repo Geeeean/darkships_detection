@@ -23,7 +23,7 @@ class Environment:
     ships: list[Ship]
     hydrophones: list[Hydrophone]
     noise_level: float
-    bellhop_env: Any
+    ac: AcousticCalculator
 
     def __init__(
         self,
@@ -37,10 +37,9 @@ class Environment:
         self.bathymetry = bathymetry
         self.noise_level = noise_level
 
-        self.hydrophones = hydrophones if hydrophones is not None else []
-        self.ships = ships if ships is not None else []
-
-        self.bellhop_env = create_env2d()
+        self.ships = []
+        self.hydrophones = []
+        self.ac = AcousticCalculator()
 
         # constants
         self.bandwith = 100  # [Hz]
@@ -76,10 +75,14 @@ class Environment:
                 # Calculate linear pressure received from the ship
                 p_tot = 0
                 for frequency in self.frequencies:
-                    env = self.get_bellhop_env(ship.coord, hydro.coord, frequency)
                     p_tot += (
-                        AcousticCalculator.calculate_linear_pressure(
-                            frequency, ship_density, self.bandwith, env
+                        self.ac.calculate_linear_pressure(
+                            frequency,
+                            ship_density,
+                            self.bandwith,
+                            self.bathymetry,
+                            ship.coord,
+                            hydro.coord,
                         )
                         ** 2
                     )
@@ -109,21 +112,6 @@ class Environment:
 
     def add_hydrophone(self, hydrophone: Hydrophone):
         self.hydrophones.append(hydrophone)
-
-    def get_bellhop_env(self, ship_coord: Point, hydro_coord: Point, frequency: float):
-        env = create_env2d()
-
-        bathy = self.bathymetry.get_depth_profile(ship_coord, hydro_coord, 10)
-        env["depth"] = Bathymetry.bellhop_sanitized(bathy)
-
-        env["tx_depth"] = ship_coord.depth
-        env["rx_depth"] = hydro_coord.depth
-        env["frequency"] = frequency
-        env["rx_range"] = floor(ship_coord.distance_2d(hydro_coord))
-
-        check_env2d(env)
-
-        return env
 
     def calculate_ship_density(self, hydro: Hydrophone):
         counter = 0
