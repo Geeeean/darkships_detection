@@ -13,14 +13,19 @@ import {
 import AisShipSymbol from "./AisShipSymbol";
 import { Loader } from "lucide-react";
 
-type props = { data: any };
+type props = { data: any; showTracked: boolean };
 
 const hydroIcon = new Icon({
   iconUrl: "https://cdn-icons-png.flaticon.com/512/156/156318.png",
   iconSize: [16, 16],
 });
 
-export default function MapView({ data }: props) {
+const trackedIcon = new Icon({
+  iconUrl: "https://cdn-icons-png.flaticon.com/512/592/592255.png",
+  iconSize: [20, 20],
+});
+
+export default function MapView({ data, showTracked }: props) {
   if (!data)
     return (
       <div className="absolute left-1/2 top-1/2 text-primary">
@@ -76,11 +81,31 @@ export default function MapView({ data }: props) {
                   {hydro.observed_pressure}dB
                 </span>
               </p>
-              <p>Delta </p>
+              <p>
+                Delta{" "}
+                <span className="font-semibold">
+                  {Number(hydro.observed_pressure) -
+                    Number(hydro.expected_pressure)}
+                </span>
+              </p>
             </Tooltip>
           </Marker>
         );
       })}
+      {showTracked
+        ? Object.entries(data.tracking).map(([key, value], index) => {
+            return (
+              <Marker key={index * 100} icon={trackedIcon} position={value}>
+                <Tooltip className="flex flex-col">
+                  <p>{key}</p>
+                  <p>
+                    position <span className="font-bold">{value}</span>
+                  </p>
+                </Tooltip>
+              </Marker>
+            );
+          })
+        : null}
     </MapContainer>
   );
 }

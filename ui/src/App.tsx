@@ -2,32 +2,26 @@ import axios from "axios";
 import MapView from "./components/MapView";
 import { useEffect, useState } from "react";
 import { Button } from "./components/ui/button";
-import { Loader, Pause, Play, RotateCcw } from "lucide-react";
+import { Eye, Loader, Pause, Play, RotateCcw, Ship } from "lucide-react";
+import DataPanel from "./components/DataPanel";
+import { Slider } from "./components/ui/slider";
 
 export type status = "run" | "pause";
 type btnStatus = "loading" | "active" | "disabled";
 
 const REFRESH_INTERVAL = 1000;
 
-const getBtnCont = (copy: string, status: btnStatus) => {
-  switch (status) {
-    case "loading":
-
-    case "active":
-    case "disabled":
-  }
-};
-
 function App() {
   const [runStatus, setRunStatus] = useState<btnStatus>("active");
   const [pauseStatus, setPauseStatus] = useState<btnStatus>("active");
   const [data, setData] = useState(null);
+  const [showState, setShowState] = useState(false);
+  const [showTracked, setShowTracked] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const res = await axios.get("http://localhost:8000/api/data");
-        console.log(res.data);
         setData(res.data);
         const status = res.data.status;
         if (status == "pause") {
@@ -95,10 +89,21 @@ function App() {
           <RotateCcw />
           Restart
         </Button>
+
+        <Button onClick={() => setShowState((old) => !old)}>
+          <Eye /> Show data
+        </Button>
+
+        <Button onClick={() => setShowTracked((old) => !old)}>
+          <Ship /> Show tracked
+        </Button>
+
+        <Slider className="justify-self-end" />
       </div>
       <div className="relative w-full h-full border rounded-md overflow-hidden">
-        <MapView data={data} />
+        <MapView data={data} showTracked={showTracked} />
       </div>
+      {showState && <DataPanel data={data} />}
     </main>
   );
 }
