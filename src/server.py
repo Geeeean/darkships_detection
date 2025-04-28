@@ -89,6 +89,8 @@ class Server:
         self.write.put("RESTART")
         return {"message": msg}
 
+    def set_delta
+
     def run(self, host="0.0.0.0", port=8000):
         import uvicorn
 

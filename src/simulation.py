@@ -237,6 +237,11 @@ class Simulation:
             "hydrophones": hydrophones_info,
             "area": self.environment.area,
             "status": self.status,
+            "tracking": {
+                "weighted_centroid_localization": DarkShipTracker.weighted_centroid_localization(
+                    self.environment
+                )
+            },
         }
 
     def run(self, total_steps):

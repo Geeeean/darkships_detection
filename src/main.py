@@ -13,7 +13,7 @@ def main():
 
     sim_process = multiprocessing.Process(
         target=run_simulation,
-        args=(config_path, sim_server_queue, server_sim_queue, 1000, 1000),
+        args=(config_path, sim_server_queue, server_sim_queue, 1000, 60),
     )
     sim_process.start()
 

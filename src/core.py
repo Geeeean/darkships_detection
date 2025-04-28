@@ -7,32 +7,29 @@ from environment import Environment
 from scipy.optimize import minimize
 from pykalman import KalmanFilter
 
+# KalmanFilter
+
 
 class DarkShipTracker:
-    def kalman_filter(self, environment: Environment, dt: float):
-        transition_matrix = np.array(
-            [
-                [1, 0, dt, 0],  # lat  = lat + v_lat * dt
-                [0, 1, 0, dt],  # lon  = lon + v_lon * dt
-                [0, 0, 1, 0],  # v_lat = costante
-                [0, 0, 0, 1],  # v_lon = costante
-            ]
-        )
+    @staticmethod
+    def weighted_centroid_localization(environment: Environment):
+        w_lat = 0
+        w_lon = 0
+        delta_tot = 0
+        for hydro in environment.hydrophones:
+            delta = hydro.observed_pressure - hydro.expected_pressure
+            delta_tot += delta
 
-        num_hydrophones = len(environment.hydrophones)
-        lat0 = np.mean([h.coord.latitude for h in environment.hydrophones])
-        lon0 = np.mean([h.coord.longitude for h in environment.hydrophones])
+            w_lat_i = hydro.coord.latitude * delta
+            w_lon_i = hydro.coord.longitude * delta
 
-        # Dummy observation matrix
-        observation_matrix = [h.observed_pressure for h in environment.hydrophones]
+            w_lat += w_lat_i
+            w_lon += w_lon_i
 
-        kf = KalmanFilter(
-            transition_matrices=transition_matrix,
-            observation_matrices=observation_matrix,
-            initial_state_mean=[lat0, lon0, 0, 0],
-            transition_covariance=np.eye(4) * 0.01,
-            observation_covariance=np.eye(num_hydrophones) * 1.0,
-        )
+        w_avg_lat = w_lat / delta_tot
+        w_avg_lon = w_lon / delta_tot
+
+        return (w_avg_lat, w_avg_lon)
 
     @staticmethod
     def mlat(environment: Environment):

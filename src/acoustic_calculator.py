@@ -62,6 +62,7 @@ class AcousticCalculator:
         ship_pressure = AcousticCalculator.shipping_noise_ross(
             frequency, ship_density
         )  # [dB re µPa/√Hz]
+        ship_pressure = 100
         ship_linear_pressure = AcousticCalculator.db_to_linear(
             ship_pressure
         )  # [µPa/√Hz]
