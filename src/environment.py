@@ -95,12 +95,10 @@ class Environment:
                     total_expected_linear += p_tot
 
             # Convert total observed pressure to dB re 1 µPa
-            hydro.observed_pressure = AcousticCalculator.linear_to_db(
-                total_observed_linear
+            hydro.observed_pressure.append(
+                AcousticCalculator.linear_to_db(total_observed_linear)
+                + np.random.normal(0, self.noise_level)
             )
-
-            # Adding noise to the observed pressure
-            hydro.observed_pressure += np.random.normal(0, self.noise_level)
 
             # Convert total expected pressure to dB re 1 µPa
             hydro.expected_pressure = AcousticCalculator.linear_to_db(

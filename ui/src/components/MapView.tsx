@@ -25,6 +25,11 @@ const trackedIcon = new Icon({
   iconSize: [20, 20],
 });
 
+const getLastElem = (arr: any[]): any => {
+  const len = arr.length;
+  return len > 0 ? arr[len - 1] : 0;
+};
+
 export default function MapView({ data, showTracked }: props) {
   if (!data)
     return (
@@ -78,13 +83,13 @@ export default function MapView({ data, showTracked }: props) {
               <p>
                 Observed Pressure{" "}
                 <span className="font-semibold">
-                  {hydro.observed_pressure}dB
+                  {getLastElem(hydro.observed_pressure)}dB
                 </span>
               </p>
               <p>
                 Delta{" "}
                 <span className="font-semibold">
-                  {Number(hydro.observed_pressure) -
+                  {Number(getLastElem(hydro.observed_pressure)) -
                     Number(hydro.expected_pressure)}
                 </span>
               </p>

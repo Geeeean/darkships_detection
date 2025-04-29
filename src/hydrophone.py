@@ -6,7 +6,7 @@ class Hydrophone:
     Attributes:
         id (int): Unique identifier
         coord (Point): Lat, Long and Point
-        observed_pressure (float): Measured acoustic pressure [dB re 1μPa]
+        observed_pressure ([float]): Measured acoustic pressure during time [dB re 1μPa]
         expected_pressure (float): Predicted acoustic pressure from AIS data
         max_range (float): Max range the hydrophone can measure pressure [km]
     """
@@ -17,9 +17,15 @@ class Hydrophone:
         self.id = id
         self.coord = Point(lat, long, depth)
         self.max_range = max_range
-        self.observed_pressure = 0.0
+        self.observed_pressure = []
         self.expected_pressure = 0.0
 
     def compute_pressure_delta(self):
-        """Calculate difference between observed and expected acoustic pressure"""
-        return self.observed_pressure - self.expected_pressure
+        """Calculate difference between last and first observed pressure"""
+        if not self.observed_pressure:
+            return 0
+
+        first = self.observed_pressure[0]
+        last = self.observed_pressure[-1]
+
+        return last - first

@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from typing import Optional
 from fastapi import FastAPI, Request
 from pathlib import Path
 from fastapi.responses import FileResponse, JSONResponse
@@ -6,6 +8,12 @@ from multiprocessing import Queue
 from threading import Thread
 from fastapi.middleware.cors import CORSMiddleware
 import time
+
+
+@dataclass
+class Command:
+    command: str
+    value: Optional[float]
 
 
 class Server:
@@ -76,20 +84,26 @@ class Server:
 
     def start(self):
         msg = "Simulation started"
-        self.write.put("START")
+        self.write.put(Command(command="START", value=None))
         return {"message": msg}
 
     def pause(self):
         msg = "Simulation paused"
-        self.write.put("PAUSE")
+        self.write.put(Command(command="PAUSE", value=None))
         return {"message": msg}
 
     def restart(self):
         msg = "Simulation restarted"
-        self.write.put("RESTART")
+        self.write.put(Command(command="RESTART", value=None))
         return {"message": msg}
 
-    def set_delta
+    async def set_delta_t_sec(self, request: Request):
+        data = await request.json()
+        delta_t = data.get("delta_t")
+
+        msg = f"Simulation delta t set to {delta_t}"
+        self.write.put(Command(command="SET_DELTA_T", value=delta_t))
+        return {"message": msg}
 
     def run(self, host="0.0.0.0", port=8000):
         import uvicorn
