@@ -66,6 +66,7 @@ export default function MapView({ data, showTracked }: props) {
         );
       })}
       {hydrophones.map((hydro, index: number) => {
+        console.log(hydro.observed_pressure);
         return (
           <Marker
             key={-index}

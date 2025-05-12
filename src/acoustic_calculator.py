@@ -51,12 +51,12 @@ class AcousticCalculator:
         hydro_point: Point,
     ):
         """
-        Calculate the linear pressure received by a hydrophone from a ship.
+        Calculate the linear pressure received by a hydrophone from a ship and the time of arrival.
         :param frequency: Central frequency in Hz
         :param ship_density: Ship density in ships/km²
         :param bandwidth: Frequency bandwidth in Hz
         :param env: Bellhop environment object
-        :return: Linear pressure in µPa
+        :return: (Linear pressure in µPa, time of arrival in seconds)
         """
 
         ship_pressure = AcousticCalculator.shipping_noise_ross(
@@ -82,11 +82,15 @@ class AcousticCalculator:
         # if estimated_received_pressure < DELTA_TRESHOLD:
         #     return 0.0
 
+        env = AcousticCalculator.get_bellhop_env(
+            bathymetry, ship_point, hydro_point, frequency
+        )
+
+        arrivals = pm.compute_arrivals(env)
+        first_arrival = arrivals["time_of_arrival"].min()
+
         attenuation_linear = self.attenuation_cache.get((ship_point, hydro_point))
         if attenuation_linear is None:
-            env = AcousticCalculator.get_bellhop_env(
-                bathymetry, ship_point, hydro_point, frequency
-            )
 
             # calculate attenuation of the pressure based on the distance
             attenuation = AcousticCalculator.calculate_attenuation(env)  # [dB]
@@ -98,7 +102,7 @@ class AcousticCalculator:
 
         pressure = tot_pressure / attenuation_linear  # [µPa]
 
-        return pressure
+        return (pressure, first_arrival)
 
     @staticmethod
     def shipping_noise_ross(frequency, ship_density):

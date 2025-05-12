@@ -1,34 +1,13 @@
 import sys
 
-from server import Server
 from simulation import Simulation
 import multiprocessing
 
 
 def main():
     config_path = get_config_path()
-
-    sim_server_queue = multiprocessing.Queue()
-    server_sim_queue = multiprocessing.Queue()
-
-    sim_process = multiprocessing.Process(
-        target=run_simulation,
-        args=(config_path, sim_server_queue, server_sim_queue, 1000, 60),
-    )
-    sim_process.start()
-
-    server = Server(sim_server_queue, server_sim_queue)
-    server.run()
-
-    sim_process.join()
-
-
-def run_simulation(
-    config_path, sim_server_queue, server_sim_queue, total_steps, delta_t_sec
-):
-    sim = Simulation(config_path, server_sim_queue, sim_server_queue, delta_t_sec)
-
-    sim.run(total_steps)
+    sim = Simulation(config_path, 60)
+    sim.run(1000)
 
 
 def get_config_path():
