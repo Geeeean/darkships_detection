@@ -18,14 +18,14 @@ class Hydrophone:
         self.coord = Point(lat, long, depth)
         self.max_range = max_range
         self.observed_pressure = []
-        self.expected_pressure = 0.0
+        # self.expected_pressure = 0.0
 
     def compute_pressure_delta(self):
         """Calculate difference between last and first observed pressure"""
         if not self.observed_pressure:
             return 0
 
-        first = self.observed_pressure[0]
-        last = self.observed_pressure[-1]
+        first = self.observed_pressure[0]["pressure"]
+        last = self.observed_pressure[-1]["pressure"]
 
         return last - first

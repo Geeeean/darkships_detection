@@ -76,7 +76,7 @@ class Environment:
                     # Calculate linear pressure received from the ship
                     p_tot = 0
                     for frequency in self.frequencies:
-                        pressure = self.ac.calculate_linear_pressure(
+                        (pressure, toa) = self.ac.calculate_linear_pressure(
                             frequency,
                             ship_density,
                             self.bandwith,
@@ -96,14 +96,17 @@ class Environment:
 
             # Convert total observed pressure to dB re 1 µPa
             hydro.observed_pressure.append(
-                AcousticCalculator.linear_to_db(total_observed_linear)
-                + np.random.normal(0, self.noise_level)
+                {
+                    "toa": toa,
+                    "pressure": AcousticCalculator.linear_to_db(total_observed_linear)
+                    + np.random.normal(0, self.noise_level),
+                }
             )
 
             # Convert total expected pressure to dB re 1 µPa
-            hydro.expected_pressure = AcousticCalculator.linear_to_db(
-                total_expected_linear
-            )
+            # hydro.expected_pressure = AcousticCalculator.linear_to_db(
+            #     total_expected_linear
+            # )
 
     def add_ship(self, ship: Ship):
         self.ships.append(ship)

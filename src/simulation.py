@@ -220,7 +220,7 @@ class Simulation:
                 "longitude": h.coord.longitude,
                 "latitude": h.coord.latitude,
                 "observed_pressure": h.observed_pressure,
-                "expected_pressure": h.expected_pressure,
+                # "expected_pressure": h.expected_pressure,
             }
             for h in self.environment.hydrophones
         ]
