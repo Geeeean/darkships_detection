@@ -1,7 +1,6 @@
-from multiprocessing import Manager, Queue
+import json
 import numpy as np
 import yaml
-import time
 
 from environment import Environment, GeoBoundingBox
 
@@ -18,15 +17,10 @@ class Simulation:
     def __init__(
         self,
         config_path: str,
-        read_queue: Queue,
-        write_queue: Queue,
         delta_t_sec: float,
     ):
         self.config = self._load_config(config_path)
         self.object_counter = 1  # Global ship and hydro counter
-        self.read = read_queue
-        self.write = write_queue
-        self.status = "pause"
         self.delta_t_sec = delta_t_sec
 
         self.initialize_environment()
@@ -45,6 +39,7 @@ class Simulation:
     def initialize_environment(self):
         """Create simulation entities from configuration"""
         self.time_spent = 0
+        self.output = self.config["output_path"]
 
         self.environment = Environment(
             area=self._get_area(),
@@ -59,10 +54,6 @@ class Simulation:
         # Create ships
         self._create_manual_ships()
         self._create_random_ships()
-
-    def estimate_ds_positions(self):
-        est_pos = DarkShipTracker.mlat(self.environment)
-        print("Dark Ship triangulated position:", est_pos)
 
     def _get_area(self):
         """Set area from configuration"""
@@ -210,7 +201,7 @@ class Simulation:
         # 2. Compute hydrophone pressures
         self.environment.calculate_pressures()
 
-    def format_for_queue(self):
+    def format_for_file(self):
         ships_info = [
             {
                 "id": s.id,
@@ -238,7 +229,6 @@ class Simulation:
             "ships": ships_info,
             "hydrophones": hydrophones_info,
             "area": self.environment.area,
-            "status": self.status,
             "tracking": {
                 "weighted_centroid_localization": DarkShipTracker.weighted_centroid_localization(
                     self.environment
@@ -247,77 +237,23 @@ class Simulation:
             "time_spent": self.time_spent,
         }
 
-    def write_data(self):
-        data = self.format_for_queue()
-        self.write.put(data)
-
     def run(self, total_steps):
         """Run the simulation"""
 
-        def restart_simulation(self):
-            """Helper to reset and initialize the simulation"""
-            print("[SIM] Restarting simulation")
-            self.initialize_environment()
-            self.environment.calculate_pressures()
-            self.write_data()
-            return 0  # reset t
+        print("[SIM] Starting simulation...")
+        print(f"[SIM] Writing output on {self.output}")
 
-        print("[SIM] Initializing simulation...")
-        self.initialize_environment()
-        self.environment.calculate_pressures()
-        self.write_data()
-
-        print("[SIM] Waiting for START command...")
-        while True:
-            cmd = self.read.get()
-            if cmd.command == "START":
-                break
-
-        self.status = "run"
         self.time_spent = 0
         t = 0
 
-        while t < total_steps:
-            loop_start = time.perf_counter()
+        with open(self.output, "w") as f:
+            while t < total_steps:
+                print(f"[SIM] Time elapsed {self.time_spent:.2f}s")
+                self.time_spent += self.delta_t_sec
 
-            while not self.read.empty():
-                cmd = self.read.get_nowait()
+                self.update_simulation(t * self.delta_t_sec)
 
-                if cmd.command == "PAUSE":
-                    self.status = "pause"
-                    print("[SIM] Pausing simulation")
-                    self.write_data()
+                data = self.format_for_file()
+                f.write(json.dumps(data) + "\n")
 
-                    while True:
-                        pause_cmd = self.read.get()
-                        if pause_cmd.command == "START":
-                            print("[SIM] Resuming simulation")
-                            self.status = "run"
-                            break
-                        elif pause_cmd.command == "RESTART":
-                            t = restart_simulation(self)
-                            break
-                        elif cmd.command == "SET_DELTA_T":
-                            if cmd.value is not None:
-                                self.delta_t_sec = cmd.value
-
-                elif cmd.command == "RESTART":
-                    t = restart_simulation(self)
-                    continue
-
-                elif cmd.command == "SET_DELTA_T":
-                    if cmd.value is not None:
-                        self.delta_t_sec = cmd.value
-
-            self.status = "run"
-            print(f"[SIM] Time elapsed {self.time_spent:.2f}s")
-            self.time_spent += self.delta_t_sec
-
-            self.update_simulation(t * self.delta_t_sec)
-            self.write_data()
-
-            elapsed = time.perf_counter() - loop_start
-            if elapsed < 1.0:
-                time.sleep(1.0 - elapsed)
-
-            t += 1
+                t += 1

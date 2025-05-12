@@ -82,11 +82,15 @@ class AcousticCalculator:
         # if estimated_received_pressure < DELTA_TRESHOLD:
         #     return 0.0
 
+        env = AcousticCalculator.get_bellhop_env(
+            bathymetry, ship_point, hydro_point, frequency
+        )
+
+        # arrivals = pm.compute_arrivals(env)
+        # first_arrival = arrivals["time_of_arrival"].min()
+
         attenuation_linear = self.attenuation_cache.get((ship_point, hydro_point))
         if attenuation_linear is None:
-            env = AcousticCalculator.get_bellhop_env(
-                bathymetry, ship_point, hydro_point, frequency
-            )
 
             # calculate attenuation of the pressure based on the distance
             attenuation = AcousticCalculator.calculate_attenuation(env)  # [dB]

@@ -1,3 +1,5 @@
+output_path: "/Users/gean/Documents/Unitn/Thesis/darkships_detection/output/01output.jsonl"
+
 environment:
   area: [10, 12, 83.5, 85.5]  # lat_min, lat_max, long_min, long_max
   bathymetry_path: "./bathymetry/bathymetry_sample.nc"

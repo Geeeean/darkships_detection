@@ -59,7 +59,7 @@ class Environment:
     def set_bathymetry(self, bathymetry: Bathymetry):
         self.bathymetry = bathymetry
 
-    def calculate_pressures(self):
+    def calculate_pressures(self, include_dark=True):
         """
         Calculate expected and observed pressures for all hydrophones.
         :param self: environment
@@ -72,11 +72,11 @@ class Environment:
             ship_density = self.calculate_ship_density(hydro)
 
             for ship in self.ships:
-                # Calculate linear pressure received from the ship
-                p_tot = 0
-                for frequency in self.frequencies:
-                    p_tot += (
-                        self.ac.calculate_linear_pressure(
+                if (not ship.is_dark) or include_dark:
+                    # Calculate linear pressure received from the ship
+                    p_tot = 0
+                    for frequency in self.frequencies:
+                        pressure = self.ac.calculate_linear_pressure(
                             frequency,
                             ship_density,
                             self.bandwith,
@@ -84,15 +84,15 @@ class Environment:
                             ship.coord,
                             hydro.coord,
                         )
-                        ** 2
-                    )
 
-                p_tot = sqrt(p_tot)
+                        p_tot += pressure**2
 
-                # Sum the linear pressures
-                total_observed_linear += p_tot
-                if not ship.is_dark:
-                    total_expected_linear += p_tot
+                    p_tot = sqrt(p_tot)
+
+                    # Sum the linear pressures
+                    total_observed_linear += p_tot
+                    if not ship.is_dark:
+                        total_expected_linear += p_tot
 
             # Convert total observed pressure to dB re 1 µPa
             hydro.observed_pressure.append(
