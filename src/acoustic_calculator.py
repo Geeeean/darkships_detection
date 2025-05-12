@@ -1,9 +1,8 @@
-from math import floor, log10, sqrt
+from math import floor, log10
 import arlpy.uwapm as pm
 import numpy as np
 
 from bathymetry import Bathymetry
-from hydrophone import Hydrophone
 from point import Point
 
 
@@ -44,50 +43,28 @@ class AcousticCalculator:
     def calculate_linear_pressure(
         self,
         frequency: float,
-        ship_density: float,
-        bandwith: float,
         bathymetry: Bathymetry,
         ship_point: Point,
         hydro_point: Point,
     ):
         """
-        Calculate the linear pressure received by a hydrophone from a ship.
+        Calculate the linear pressure received by a hydrophone from a ship and the time of arrival.
         :param frequency: Central frequency in Hz
-        :param ship_density: Ship density in ships/km²
         :param bandwidth: Frequency bandwidth in Hz
         :param env: Bellhop environment object
-        :return: Linear pressure in µPa
+        :return: (Linear pressure in µPa, time of arrival in seconds)
         """
 
-        ship_pressure = AcousticCalculator.shipping_noise_ross(
-            frequency, ship_density
-        )  # [dB re µPa/√Hz]
-        ship_pressure = 100
-        ship_linear_pressure = AcousticCalculator.db_to_linear(
-            ship_pressure
-        )  # [µPa/√Hz]
-        tot_pressure = ship_linear_pressure * sqrt(bandwith)  # [µPa]
-
-        # Estimating attenuation before running bellhop
-        # bellhop requires high computational cost: high attenuation estim
-        # allows to skip this passage
-        # DELTA_TRESHOLD = 10 # [µPa]
-        # alpha = AcousticCalculator.absorption_coefficient_thorp(frequency)
-        # distance_km = env["rx_range"] / 1000  # [km]
-        # estimated_tl = 20 * log10(distance_km * 1000) + alpha * distance_km
-        # estimated_attenuation = AcousticCalculator.db_to_linear(estimated_tl)
-        # estimated_received_pressure = tot_pressure / estimated_attenuation
-
-        # Skip Bellhop: signal too weak to be relevant
-        # if estimated_received_pressure < DELTA_TRESHOLD:
-        #     return 0.0
+        tot_pressure = AcousticCalculator.db_to_linear(
+            180
+        )  # todo: calculate with empiric formula
 
         env = AcousticCalculator.get_bellhop_env(
             bathymetry, ship_point, hydro_point, frequency
         )
 
-        # arrivals = pm.compute_arrivals(env)
-        # first_arrival = arrivals["time_of_arrival"].min()
+        arrivals = pm.compute_arrivals(env)
+        first_arrival = arrivals["time_of_arrival"].min()
 
         attenuation_linear = self.attenuation_cache.get((ship_point, hydro_point))
         if attenuation_linear is None:
@@ -98,11 +75,15 @@ class AcousticCalculator:
                 attenuation
             )  # [adimensional]
 
-            self.attenuation_cache[(ship_point, hydro_point)] = attenuation_linear
+            self.attenuation_cache[(ship_point, hydro_point, frequency)] = (
+                attenuation_linear
+            )
+        else:
+            print(f"CACHE HIT {ship_point} {hydro_point}")
 
         pressure = tot_pressure / attenuation_linear  # [µPa]
 
-        return pressure
+        return (pressure, first_arrival)
 
     @staticmethod
     def shipping_noise_ross(frequency, ship_density):

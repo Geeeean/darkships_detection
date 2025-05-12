@@ -14,6 +14,12 @@ GeoBoundingBox: TypeAlias = tuple[
     float, float, float, float
 ]  # lat_min, lat_max, lon_min, lon_max
 
+# Configuration parameters
+min_freq = 10  # Hz
+max_freq = 1000  # Hz
+num_key_freq = 5  # Number of frequencies for Bellhop sampling
+num_interp_freq = 100  # Total frequencies for final integration
+
 
 class Environment:
     """Container for environment data"""
@@ -41,10 +47,6 @@ class Environment:
         self.hydrophones = []
         self.ac = AcousticCalculator()
 
-        # constants
-        self.bandwith = 100  # [Hz]
-        self.frequencies = [100, 500, 1000]  # [Hz]
-
     def get_random_coordinates(self):
         lat_rand = np.random.uniform(self.area[0], self.area[1])
         long_rand = np.random.uniform(self.area[2], self.area[3])
@@ -58,52 +60,6 @@ class Environment:
 
     def set_bathymetry(self, bathymetry: Bathymetry):
         self.bathymetry = bathymetry
-
-    def calculate_pressures(self, include_dark=True):
-        """
-        Calculate expected and observed pressures for all hydrophones.
-        :param self: environment
-        """
-
-        for hydro in self.hydrophones:
-            total_observed_linear = 0.0
-            total_expected_linear = 0.0
-
-            ship_density = self.calculate_ship_density(hydro)
-
-            for ship in self.ships:
-                if (not ship.is_dark) or include_dark:
-                    # Calculate linear pressure received from the ship
-                    p_tot = 0
-                    for frequency in self.frequencies:
-                        pressure = self.ac.calculate_linear_pressure(
-                            frequency,
-                            ship_density,
-                            self.bandwith,
-                            self.bathymetry,
-                            ship.coord,
-                            hydro.coord,
-                        )
-
-                        p_tot += pressure**2
-
-                    p_tot = sqrt(p_tot)
-
-                    # Sum the linear pressures
-                    total_observed_linear += p_tot
-                    if not ship.is_dark:
-                        total_expected_linear += p_tot
-
-            # Convert total observed pressure to dB re 1 µPa
-            hydro.observed_pressure.append(
-                AcousticCalculator.linear_to_db(total_observed_linear)
-                + np.random.normal(0, self.noise_level)
-            )
-
-            # Convert total expected pressure to dB re 1 µPa
-            hydro.expected_pressure = AcousticCalculator.linear_to_db(
-                total_expected_linear
-            )
 
     def add_ship(self, ship: Ship):
         self.ships.append(ship)
@@ -122,3 +78,72 @@ class Environment:
                 counter += 1
 
         return counter / (pi * radius**2)
+
+    def calculate_pressures(self, include_dark=True):
+        """
+        Calculate pressures with frequency interpolation and proper TOA handling
+        """
+        # Convert noise to linear scale
+        noise_std_linear = 10 ** (self.noise_level / 20) if self.noise_level > 0 else 0
+
+        # Create frequency grids
+        key_frequencies = np.linspace(min_freq, max_freq, num_key_freq)
+        interp_frequencies = np.linspace(min_freq, max_freq, num_interp_freq)
+
+        # Convert noise to linear scale
+        noise_std_linear = 10 ** (self.noise_level / 20) if self.noise_level > 0 else 0
+
+        for hydro in self.hydrophones:
+            total_observed_linear = 0.0
+            toa_energy_pairs = []
+
+            for ship in self.ships:
+                if (not ship.is_dark) or include_dark:
+                    pressure_values = []
+                    toa_values = []
+
+                    # 1. Get mock values at key frequencies
+                    for f in key_frequencies:
+                        pressure, toa = self.ac.calculate_linear_pressure(
+                            f, self.bathymetry, ship.coord, hydro.coord
+                        )
+                        pressure_values.append(pressure)
+                        toa_values.append(toa)
+
+                    # 2. Interpolate pressure values across frequencies
+                    interp_pressures = np.interp(
+                        interp_frequencies, key_frequencies, pressure_values
+                    )
+
+                    # 3. Calculate energy (sum of squares)
+                    ship_energy = np.sum([p**2 for p in interp_pressures])
+                    ship_pressure = np.sqrt(ship_energy / num_interp_freq)
+
+                    # 4. Find dominant TOA (use frequency with max pressure)
+                    max_pressure_idx = np.argmax(pressure_values)
+                    best_toa = toa_values[max_pressure_idx]
+                    toa_energy_pairs.append((best_toa, ship_energy))
+
+                    # 5. Add noise and accumulate pressures
+                    noisy_pressure = ship_pressure + np.random.normal(
+                        0, noise_std_linear
+                    )
+                    total_observed_linear += noisy_pressure
+
+            # 6. Determine overall best TOA
+            if toa_energy_pairs:
+                max_energy = max(toa_energy_pairs, key=lambda x: x[1])[1]
+                dominant_toas = [
+                    t for t, e in toa_energy_pairs if e >= 0.9 * max_energy
+                ]
+                final_toa = np.mean(dominant_toas) if dominant_toas else 0.0
+            else:
+                final_toa = 0.0
+
+            # 7. Store results
+            result = {
+                "toa": final_toa,
+                "pressure": AcousticCalculator.linear_to_db(total_observed_linear),
+            }
+            print(result)
+            hydro.observed_pressure.append(result)

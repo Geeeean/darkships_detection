@@ -26,15 +26,15 @@ hydrophones_config:
 
 ships_config:
   # DATA FOR MANUAL SHIPS GENERATION
-  ais_ships:                        # Manual ais ships
+  # ais_ships:                        # Manual ais ships
     # - coordinates: [11.8, 83.9]     # AIS Ship 1
     #   speed: 10                     # [kt]
     #   depth: 10                     # [m]
     #   heading: 30                   # [°]
-    - coordinates: [10.4, 82.5]       # AIS Ship 2
-      speed: 10                     # [kt]
-      depth: 10                     # [m]
-      heading: 270                  # [°]
+    # - coordinates: [10.4, 82.5]       # AIS Ship 2
+    #   speed: 10                     # [kt]
+    #   depth: 10                     # [m]
+    #   heading: 270                  # [°]
 
   dark_ships:                       # Manual dark ships
     - coordinates: [12, 82.6]    # Dark Ship 1
