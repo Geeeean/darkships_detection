@@ -36,12 +36,14 @@ class Environment:
         area: GeoBoundingBox,
         bathymetry: Bathymetry,
         noise_level: float,
+        toa_variance: float,
         hydrophones=None,
         ships=None,
     ):
         self.area = area
         self.bathymetry = bathymetry
         self.noise_level = noise_level
+        self.toa_variance = toa_variance
 
         self.ships = []
         self.hydrophones = []
@@ -83,9 +85,6 @@ class Environment:
         """
         Calculate pressures with frequency interpolation and proper TOA handling
         """
-        # Convert noise to linear scale
-        noise_std_linear = 10 ** (self.noise_level / 20) if self.noise_level > 0 else 0
-
         # Create frequency grids
         key_frequencies = np.linspace(min_freq, max_freq, num_key_freq)
         interp_frequencies = np.linspace(min_freq, max_freq, num_interp_freq)
@@ -124,26 +123,20 @@ class Environment:
                     best_toa = toa_values[max_pressure_idx]
                     toa_energy_pairs.append((best_toa, ship_energy))
 
-                    # 5. Add noise and accumulate pressures
-                    noisy_pressure = ship_pressure + np.random.normal(
-                        0, noise_std_linear
-                    )
-                    total_observed_linear += noisy_pressure
+                    total_observed_linear += ship_pressure
 
             # 6. Determine overall best TOA
             if toa_energy_pairs:
-                max_energy = max(toa_energy_pairs, key=lambda x: x[1])[1]
-                dominant_toas = [
-                    t for t, e in toa_energy_pairs if e >= 0.9 * max_energy
-                ]
-                final_toa = np.mean(dominant_toas) if dominant_toas else 0.0
+                final_toa = min(toa_energy_pairs, key=lambda x: x[0])[0]
             else:
                 final_toa = 0.0
+
+            total_observed_linear += np.random.normal(0, noise_std_linear)
+            final_toa += np.random.normal(0, np.sqrt(self.toa_variance))
 
             # 7. Store results
             result = {
                 "toa": final_toa,
                 "pressure": AcousticCalculator.linear_to_db(total_observed_linear),
             }
-            print(result)
             hydro.observed_pressure.append(result)

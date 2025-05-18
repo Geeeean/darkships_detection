@@ -11,12 +11,9 @@ class Hydrophone:
         max_range (float): Max range the hydrophone can measure pressure [km]
     """
 
-    def __init__(
-        self, id: int, lat: float, long: float, depth: float, max_range: float
-    ):
+    def __init__(self, id: int, lat: float, long: float, depth: float):
         self.id = id
         self.coord = Point(lat, long, depth)
-        self.max_range = max_range
         self.observed_pressure = []
         # self.expected_pressure = 0.0
 

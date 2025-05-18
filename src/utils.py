@@ -1,21 +1,38 @@
-import mplcursors
+import os
+import shutil
 
 
 class Utils:
     @staticmethod
-    def add_hover_tooltip(scatter_plot, labels):
-        """Adds a tooltip on hover for a scatter plot."""
-        cursor = mplcursors.cursor(scatter_plot, hover=True)
+    def create_empty_folder(folder_path):
+        if os.path.exists(folder_path):
+            if os.path.isdir(folder_path):
+                for item in os.listdir(folder_path):
+                    item_path = os.path.join(folder_path, item)
+                    if os.path.isfile(item_path):
+                        os.remove(item_path)
+                    elif os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+            else:
+                os.remove(folder_path)
+                os.makedirs(folder_path)
+        else:
+            os.makedirs(folder_path)
 
-        @cursor.connect("add")
-        def on_hover(sel):
-            # Set the text for the tooltip with corresponding label
-            sel.annotation.set_text(labels[sel.index])
+    @staticmethod
+    def _ls(path: str, starting_with: str):
+        if not os.path.exists(path) or not os.path.isdir(path):
+            print(f"Error: '{path}' doesn't exist or isn't a folder.")
+            return []
 
-            # Customize tooltip appearance
-            sel.annotation.get_bbox_patch().set_facecolor("white")  # White background
-            sel.annotation.get_bbox_patch().set_alpha(
-                0.6
-            )  # Semi-transparent background
+        files = []
 
-        return cursor
+        for filename in os.listdir(path):
+            if filename.startswith(starting_with):
+                file_path = os.path.join(path, filename)
+
+                if os.path.isfile(file_path):
+                    files.append(file_path)
+
+        files.sort()
+        return files

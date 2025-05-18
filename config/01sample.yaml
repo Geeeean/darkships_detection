@@ -1,22 +1,22 @@
-output_path: "/Users/gean/Documents/Unitn/Thesis/darkships_detection/output/01output.jsonl"
+output_path: "/Users/gean/Documents/Unitn/Thesis/darkships_detection/output"
+name: "sample"
 
 environment:
   area: [10, 12, 83.5, 85.5]  # lat_min, lat_max, long_min, long_max
   bathymetry_path: "./bathymetry/bathymetry_sample.nc"
+  toa_variance: [4.84e-4, 4.84e-3, 4.84e-2, 4.84e-1, 4.84]
 
 hydrophones_config:
   # DATA FOR MANUAL HYDROPHONES GENERATION
   hydrophones:
-    - coordinates: [11, 83.5]     # Hydrophone 1
-      max_range: 50                 # [km]
-      depth: 20                     # [m]
-    - coordinates: [11.2, 84.5]         # Hydrophone 2
-      max_range: 30                 # [km]
-      depth: 30                     # [m]
-    - coordinates: [11.5, 83.8]     # Hydrophone 3
-      max_range: 30                 # [km]
-      depth: 30                     # [m]
-
+      - coordinates: [11.0, 84.0]     # Idrofono 1
+        depth: 20                     # [m]
+      - coordinates: [11.03, 84.0]    # Idrofono 2
+        depth: 20                     # [m]
+      - coordinates: [11.03, 84.03]   # Idrofono 3
+        depth: 20                     # [m]
+      - coordinates: [11.0, 84.03]    # Idrofono 4
+        depth: 20                     # [m]
   noise_level: 2.0                  # [dB re 1 µPa]
 
   # DATA FOR RANDOM HYDROPHONES GENERATION
@@ -37,10 +37,10 @@ ships_config:
     #   heading: 270                  # [°]
 
   dark_ships:                       # Manual dark ships
-    - coordinates: [12, 82.6]    # Dark Ship 1
-      speed: 15                     # kt
-      depth: 10                     # [m]
-      heading: 120                  # [°]
+    - coordinates: [11.015, 84.045]    # Dark Ship 1
+      speed: 10                     # kt
+      depth: 20                     # [m]
+      heading: 225 # [°]
 
   # DATA FOR RANDOM SHIPS GENERATION
   num_random_ais_ships: 0           # Generate random ais ships

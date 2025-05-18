@@ -2,9 +2,8 @@ import json
 import numpy as np
 import yaml
 
+from utils import Utils
 from environment import Environment, GeoBoundingBox
-
-from core import DarkShipTracker
 
 from hydrophone import Hydrophone
 from ship import Ship
@@ -23,7 +22,7 @@ class Simulation:
         self.object_counter = 1  # Global ship and hydro counter
         self.delta_t_sec = delta_t_sec
 
-        self.initialize_environment()
+        self.setup_sim()
 
     def _load_config(self, path: str):
         """Load simulation parameters from YAML file
@@ -36,15 +35,27 @@ class Simulation:
         with open(path) as f:
             return yaml.safe_load(f)
 
-    def initialize_environment(self):
-        """Create simulation entities from configuration"""
-        self.time_spent = 0
+    def setup_sim(self):
+        """Setup simulation from config file"""
+        self.name = self.config["name"]
         self.output = self.config["output_path"]
+
+        folder = f"{self.output}/{self.name}"
+
+        Utils.create_empty_folder(folder)
+        print(f"Initialized output folder: {folder}")
+
+        self.time_spent = 0
+        self.toa_variance = self.config["environment"].get("toa_variance", [0])
+
+    def initialize_environment(self, toa_variance: float):
+        """Initialize environment from configuration"""
 
         self.environment = Environment(
             area=self._get_area(),
             bathymetry=self._get_bathymetry(),
             noise_level=self._get_noise_level(),
+            toa_variance=toa_variance,
         )
 
         # Create hydrophones
@@ -86,35 +97,27 @@ class Simulation:
             lat=hydrophone_data["coordinates"][0],
             long=hydrophone_data["coordinates"][1],
             depth=hydrophone_data["depth"],
-            max_range=hydrophone_data["max_range"],
         )
 
     def _create_random_hydrophones(self):
         # Random hydrophones
         num_random = self.config["hydrophones_config"].get("num_random", 0)
-        max_range_range = self.config["hydrophones_config"].get(
-            "max_range_range", [30, 50]
-        )
         depth_range = self.config["hydrophones_config"].get("depth_range", [0, 0])
 
         for _ in range(num_random):
-            hydrophone = self._create_random_hydrophone(max_range_range, depth_range)
+            hydrophone = self._create_random_hydrophone(depth_range)
             self.environment.add_hydrophone(hydrophone)
             self.object_counter += 1
 
-    def _create_random_hydrophone(
-        self, max_range_range: list[float], depth_range: list[float]
-    ):
+    def _create_random_hydrophone(self, depth_range: list[float]):
         """Generate random hydrophone within specified area"""
         lat, long = self.environment.get_random_coordinates()
-        max_range = np.random.uniform(max_range_range[0], max_range_range[1])
         depth = np.random.uniform(depth_range[0], depth_range[1])
 
         return Hydrophone(
             id=self.object_counter,
             lat=lat,
             long=long,
-            max_range=max_range,
             depth=depth,
         )
 
@@ -219,8 +222,9 @@ class Simulation:
                 "id": h.id,
                 "longitude": h.coord.longitude,
                 "latitude": h.coord.latitude,
+                "depth": h.coord.depth,
                 "observed_pressure": h.observed_pressure,
-                # "expected_pressure": h.expected_pressure,
+                # "expected_pressure": h.expected_pressure,
             }
             for h in self.environment.hydrophones
         ]
@@ -229,31 +233,35 @@ class Simulation:
             "ships": ships_info,
             "hydrophones": hydrophones_info,
             "area": self.environment.area,
-            "tracking": {
-                "weighted_centroid_localization": DarkShipTracker.weighted_centroid_localization(
-                    self.environment
-                )
-            },
             "time_spent": self.time_spent,
         }
 
     def run(self, total_steps):
         """Run the simulation"""
 
-        print("[SIM] Starting simulation...")
-        print(f"[SIM] Writing output on {self.output}")
+        for i in range(len(self.toa_variance)):
+            f_name = f"{self.output}/{self.name}/sim_{i}.jsonl"
 
-        self.time_spent = 0
-        t = 0
+            variance = self.toa_variance[i]
 
-        with open(self.output, "w") as f:
-            while t < total_steps:
-                print(f"[SIM] Time elapsed {self.time_spent:.2f}s")
-                self.time_spent += self.delta_t_sec
+            self.initialize_environment(variance)
 
-                self.update_simulation(t * self.delta_t_sec)
+            print(f"\n[SIM] Starting simulation with variance {variance}")
+            print(f"[SIM] Writing output on {f_name}")
 
-                data = self.format_for_file()
-                f.write(json.dumps(data) + "\n")
+            self.time_spent = 0
+            t = 0
 
-                t += 1
+            with open(f_name, "w") as f:
+                while t < total_steps:
+                    self.time_spent = t * self.delta_t_sec
+                    print(f"[SIM] Time elapsed {self.time_spent:.2f}s")
+
+                    self.update_simulation(t * self.delta_t_sec)
+
+                    data = self.format_for_file()
+                    f.write(json.dumps(data) + "\n")
+
+                    t += 1
+
+            print("[SIM] Ending simulation")
