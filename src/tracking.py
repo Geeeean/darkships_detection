@@ -102,16 +102,16 @@ class Tracking:
                         )
                         print(f" - Real position: \t{true_pos}\t0")
                         print(
-                            f" - Weighted Centroid: \t{centroid_pos}\t{self._calculate_squared_error(hydrophones,centroid_pos, true_pos)}"
+                            f" - Weighted Centroid: \t{centroid_pos}\t{self.calculate_distance_error(hydrophones,centroid_pos, true_pos)}"
                         )
                         print(
-                            f" - TDOA: \t\t{tdoa_pos}\t{self._calculate_squared_error(hydrophones,tdoa_pos, true_pos)}"
+                            f" - TDOA: \t\t{tdoa_pos}\t{self.calculate_distance_error(hydrophones,tdoa_pos, true_pos)}"
                         )
                         print(
-                            f" - TMM: \t\t{tmm_pos}\t{self._calculate_squared_error(hydrophones,tmm_pos, true_pos)}"
+                            f" - TMM: \t\t{tmm_pos}\t{self.calculate_distance_error(hydrophones,tmm_pos, true_pos)}"
                         )
                         print(
-                            f" - SR-LS: \t\t{sr_ls_pos}\t{self._calculate_squared_error(hydrophones,sr_ls_pos, true_pos)}"
+                            f" - SR-LS: \t\t{sr_ls_pos}\t{self.calculate_distance_error(hydrophones,sr_ls_pos, true_pos)}"
                         )
 
                         data = self._format_for_file(
@@ -120,11 +120,12 @@ class Tracking:
                                 "centroid": centroid_pos,
                                 "tdoa": tdoa_pos,
                                 "tmm": tmm_pos,
+                                "sr_ls": sr_ls_pos,
                             },
                         )
                         w.write(json.dumps(data) + "\n")
 
-    def _calculate_squared_error(self, hydrophones, pos_estimated, pos_true):
+    def calculate_distance_error(self, hydrophones, pos_estimated, pos_true):
         """Calculate squared error between estimated and true positions"""
         # Get UTM coordinates for accurate distance calculation
         utility_localizer = CoordinateHandler(hydrophones)
@@ -134,5 +135,5 @@ class Tracking:
         e2, n2 = utility_localizer.geo_to_utm(pos_true[0], pos_true[1])
 
         # Calculate squared error (in square meters)
-        distance_error = np.sqrt((e1 - e2) ** 2)
+        distance_error = np.abs(e1 - e2)
         return distance_error

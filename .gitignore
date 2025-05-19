@@ -1,5 +1,5 @@
 # bathymetry folder
-bathymetry/*
+bathymetry
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -198,3 +198,5 @@ ui/*.ntvs*
 ui/*.njsproj
 ui/*.sln
 ui/*.sw?
+
+output

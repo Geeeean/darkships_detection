@@ -1,5 +1,5 @@
 output_path: "/Users/gean/Documents/Unitn/Thesis/darkships_detection/output"
-name: "sample"
+name: "test"
 
 environment:
   area: [10, 12, 83.5, 85.5]  # lat_min, lat_max, long_min, long_max
@@ -25,17 +25,6 @@ hydrophones_config:
   depth_range: [0, 35]              # [m]
 
 ships_config:
-  # DATA FOR MANUAL SHIPS GENERATION
-  # ais_ships:                        # Manual ais ships
-    # - coordinates: [11.8, 83.9]     # AIS Ship 1
-    #   speed: 10                     # [kt]
-    #   depth: 10                     # [m]
-    #   heading: 30                   # [°]
-    # - coordinates: [10.4, 82.5]       # AIS Ship 2
-    #   speed: 10                     # [kt]
-    #   depth: 10                     # [m]
-    #   heading: 270                  # [°]
-
   dark_ships:                       # Manual dark ships
     - coordinates: [11.032, 84.015]    # Dark Ship 1
       speed: 10                     # kt
