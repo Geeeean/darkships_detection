@@ -13,14 +13,11 @@ from bathymetry import Bathymetry
 class Simulation:
     """Handles environment setup and configuration parsing"""
 
-    def __init__(
-        self,
-        config_path: str,
-        delta_t_sec: float,
-    ):
+    def __init__(self, config_path: str, delta_t_sec: float, iterations: int):
         self.config = self._load_config(config_path)
         self.object_counter = 1  # Global ship and hydro counter
         self.delta_t_sec = delta_t_sec
+        self.iterations = iterations
 
         self.setup_sim()
 
@@ -43,7 +40,7 @@ class Simulation:
         folder = f"{self.output}/{self.name}"
 
         Utils.create_empty_folder(folder)
-        print(f"Initialized output folder: {folder}")
+        print(f"+ Initialized output folder: {folder}")
 
         self.time_spent = 0
         self.toa_variance = self.config["environment"].get("toa_variance", [0])
@@ -238,30 +235,73 @@ class Simulation:
 
     def run(self, total_steps):
         """Run the simulation"""
+        num_digits = len(str(self.iterations))
+        out_folder = f"{self.output}/{self.name}"
+        print(f"+ Writing in {out_folder}")
 
-        for i in range(len(self.toa_variance)):
-            f_name = f"{self.output}/{self.name}/sim_{i}.jsonl"
+        print(f"+ Cloning config file into output folder for further analysis...")
+        with open(f"{out_folder}/config.yaml", "w") as f:
+            yaml.safe_dump(self.config, f, default_flow_style=False)
 
-            variance = self.toa_variance[i]
+        print("+ Starting Simulation...")
 
-            self.initialize_environment(variance)
+        for it in range(self.iterations):
+            print(f"+ Computing iteration {it}")
 
-            print(f"\n[SIM] Starting simulation with variance {variance}")
-            print(f"[SIM] Writing output on {f_name}")
+            # Nome file unico per questa iterazione
+            iteration_str = str(it).zfill(num_digits)
+            f_name = f"{iteration_str}_simulation.jsonl"
+            out_name = f"{out_folder}/{f_name}"
 
-            self.time_spent = 0
-            t = 0
+            print(f"| Producing file {f_name}")
 
-            with open(f_name, "w") as f:
+            # Array per raccogliere tutti i dati di questa iterazione
+            iteration_data = []
+
+            for i in range(len(self.toa_variance)):
+                variance = self.toa_variance[i]
+                print(f"| Processing variance {variance}")
+
+                self.initialize_environment(variance)
+                self.time_spent = 0
+                t = 0
+
+                # Raccogli tutti i dati per questa varianza
+                variance_data = []
                 while t < total_steps:
                     self.time_spent = t * self.delta_t_sec
-                    print(f"[SIM] Time elapsed {self.time_spent:.2f}s")
-
                     self.update_simulation(t * self.delta_t_sec)
-
                     data = self.format_for_file()
-                    f.write(json.dumps(data) + "\n")
-
+                    variance_data.append(data)
                     t += 1
 
-            print("[SIM] Ending simulation")
+                # Aggiungi all'array dell'iterazione
+                iteration_data.append({"variance": variance, "data": variance_data})
+
+            # Scrivi tutto l'array nel file
+            with open(out_name, "w") as f:
+                f.write(json.dumps(iteration_data) + "\n")
+
+        print("+ Simulation end")
+
+
+# will produce...
+# [
+#   {
+#     "variance": 1.0e-5,
+#     "data": [
+#       {"ships": [...], "hydrophones": [...], "time_spent": 0},
+#       {"ships": [...], "hydrophones": [...], "time_spent": 60},
+#       ...
+#     ]
+#   },
+#   {
+#     "variance": 1.0e-4,
+#     "data": [
+#       {"ships": [...], "hydrophones": [...], "time_spent": 0},
+#       {"ships": [...], "hydrophones": [...], "time_spent": 60},
+#       ...
+#     ]
+#   },
+#   ...
+# ]

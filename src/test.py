@@ -4,7 +4,6 @@ import yaml
 import os
 import numpy as np
 import matplotlib.pyplot as plt
-from core import CoordinateHandler
 from simulation import Simulation
 from tracking import Tracking
 from utils import Utils

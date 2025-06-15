@@ -90,7 +90,7 @@ class TDOALocalizer(CoordinateHandler):
 
     def tdoa_localize(self, v_water=None):
         """
-        Implement TDOA localization using the algorithm from the paper.
+        Implement TDOA localization using the algorithm from the paper [1].
         Returns the estimated position in geographic coordinates (lat, lon).
         """
         # Use class-level sound speed if none provided
@@ -120,7 +120,7 @@ class TDOALocalizer(CoordinateHandler):
         A = []
         D = []
 
-        # Process hydrophones from index 2 onwards (as per algorithm)
+        # Process hydrophones from index 2 onwards
         for i in range(2, len(self.hydrophones)):
             xi, yi = s[i]
 
@@ -131,7 +131,7 @@ class TDOALocalizer(CoordinateHandler):
             if abs(tau_i) < 1e-10 or abs(tau_2) < 1e-10:
                 continue
 
-            # Computing A_i, B_i, D_i as per equations (15)-(17) in the paper
+            # Computing A_i, B_i, D_i as per equations (15)-(17)
             Ai = (1 / (v_water * tau_i)) * (-2 * x1 + 2 * xi) - (
                 1 / (v_water * tau_2)
             ) * (-2 * x1 + 2 * x2)

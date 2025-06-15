@@ -55,7 +55,6 @@ class Bathymetry:
                 [1000, 25]  # 25 m at 1km
             ]
         """
-
         lats = np.linspace(start_coords.latitude, end_coords.latitude, num_points)
         lons = np.linspace(start_coords.longitude, end_coords.longitude, num_points)
 

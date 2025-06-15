@@ -51,7 +51,7 @@ def plot_environment(env_df):
         hydro_lons.append(hydro["hydro_lon"])
 
     plt.scatter(
-        hydro_lons, hydro_lats, color="blue", marker="^", s=100, label="Idrofoni"
+        hydro_lons, hydro_lats, color="blue", marker="^", s=100, label="Hydrophones"
     )
 
     # Aggiungi etichette agli idrofoni
@@ -69,7 +69,7 @@ def plot_environment(env_df):
     ship_lons = env_df["ship_lon"].to_list()
 
     # Plotta la traiettoria della nave
-    plt.plot(ship_lons, ship_lats, "k-", label="Traiettoria nave")
+    plt.plot(ship_lons, ship_lats, "k-", label="Ship direction")
     plt.scatter(ship_lons, ship_lats, color="black", s=20, alpha=0.5)
 
     # Evidenzia la posizione finale della nave
@@ -79,7 +79,7 @@ def plot_environment(env_df):
         color="red",
         marker="*",
         s=200,
-        label="Posizione finale nave",
+        label="Final ship position",
     )
 
     # Calcola i confini della mappa
@@ -103,22 +103,10 @@ def plot_environment(env_df):
     plt.xlim(center_lon - max_dist_lon, center_lon + max_dist_lon)
     plt.ylim(center_lat - max_dist_lat, center_lat + max_dist_lat)
 
-    # Calcola la scala approssimativa (1 grado di latitudine ≈ 111 km)
-    scale_km = max_dist_lat * 111
-    scale_text = f"Scala: {scale_km:.2f} km"
-
-    # Aggiungi la scala
-    plt.annotate(
-        scale_text,
-        xy=(0.05, 0.05),
-        xycoords="axes fraction",
-        bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="black", alpha=0.8),
-    )
-
     plt.grid(True)
-    plt.xlabel("Longitudine")
-    plt.ylabel("Latitudine")
-    plt.title("Mappa delle posizioni degli idrofoni e della nave")
+    plt.xlabel("Longitude")
+    plt.ylabel("Latitude")
+    plt.title("Env Map")
     plt.legend(loc="upper right")
     plt.tight_layout()
     plt.show()
