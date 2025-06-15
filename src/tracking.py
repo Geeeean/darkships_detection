@@ -1,10 +1,13 @@
-import time
 import json
 import yaml
-
+import sys
+import os
 from hydrophone import Hydrophone
 from core import Core
+from simulation import SIMULATION_FOLDER
 from utils import Utils
+
+TRACKING_FOLDER = "tracking"
 
 
 class Tracking:
@@ -12,14 +15,16 @@ class Tracking:
 
     def __init__(self, output_path: str):
         self.config = self._load_config(f"{output_path}/config.yaml")
-
         path = self.config["output_path"]
         name = self.config["name"]
         self.path = f"{path}/{name}"
+        self.sim_files = Utils._ls(f"{self.path}/{SIMULATION_FOLDER}", None)
 
-        self.sim_files = Utils._ls(self.path, "sim")
+        print(f"| Reading and writing from/into {self.path}")
+        print(f"| Found {len(self.sim_files)} simulation files")
+        Utils.create_empty_folder(f"{self.path}/{TRACKING_FOLDER}")
 
-        print(self.sim_files)
+        print("+ Setup ended correctly\n")
 
     def _load_config(self, path: str):
         with open(path, "r") as f:
@@ -73,51 +78,163 @@ class Tracking:
 
     def run(self):
         """Esegue il tracking per ogni snapshot del file input"""
-        run_timestamp = str(int(time.time()))
-
-        print(f"Reading and writing from/into {self.path}")
-
         for sim_input in self.sim_files:
             f_name = sim_input.split("/")[-1]
-            out_file = f"{self.path}/tracking_{f_name}"
-
-            print(f"Reading data from: {f_name} | Writing data in: tracking_{f_name}")
+            f_number = f_name.split("_")[0]
+            out_file = f"{f_number}_tracking.jsonl"
+            out_path = f"{self.path}/{TRACKING_FOLDER}/{out_file}"
 
             # Raccogli tutti i dati in una lista
-            run_data = []
+            write_data = []
 
-            with open(sim_input, "r") as r:
-                first = True
-                for line in r:
-                    if first:
-                        first = False
+            try:
+                with open(sim_input, "r") as r:
+                    print(f"+ Processing file {f_name}")
+                    # Leggi l'intero contenuto del file (una riga con array JSON)
+                    content = r.read().strip()
+                    if not content:
+                        print(f"| Warning: Empty file {f_name}")
                         continue
 
-                    snapshot = json.loads(line)
-                    hydrophones = self._load_hydrophones(snapshot)
-                    d_ship = snapshot["ships"][0]
-                    true_pos = (d_ship["latitude"], d_ship["longitude"])
+                    # Parse dell'array di simulazioni
+                    simulations = json.loads(content)
 
-                    centroid_pos = Core.weighted_centroid_localization(hydrophones)
-                    tdoa_pos = Core.tdoa_localization(hydrophones)
-                    tmm_pos = Core.tmm_localization(hydrophones)
-                    sr_ls_pos = Core.sr_ls_localization(hydrophones)
+                    # Itera attraverso ogni simulazione (oggetto con variance e data)
+                    for simulation in simulations:
+                        run_data = []
+                        variance = simulation["variance"]
+                        snapshots = simulation["data"]
 
-                    data = self._format_for_file(
-                        snapshot,
-                        {
-                            "truth_pos": true_pos,
-                            "centroid": centroid_pos,
-                            "tdoa": tdoa_pos,
-                            "tmm": tmm_pos,
-                            "sr_ls": sr_ls_pos,
-                        },
-                    )
-                    run_data.append(data)
+                        print(
+                            f"| Processing variance {variance} with {len(snapshots)} snapshots"
+                        )
 
-            # Crea il dizionario con timestamp
-            timestamped_data = {run_timestamp: run_data}
+                        # Processa ogni snapshot in questa simulazione
+                        for snapshot in snapshots:
+                            hydrophones = self._load_hydrophones(snapshot)
 
-            # Scrivi tutto insieme nel file
-            with open(out_file, "a") as w:
-                w.write(json.dumps(timestamped_data) + "\n")
+                            # Trova la nave dark
+                            dark_ships = [s for s in snapshot["ships"] if s["is_dark"]]
+                            if not dark_ships:
+                                print(
+                                    f"| Warning: No dark ships found in snapshot at time {snapshot['time_spent']}"
+                                )
+                                continue
+
+                            d_ship = dark_ships[0]
+                            true_pos = (d_ship["latitude"], d_ship["longitude"])
+
+                            try:
+                                centroid_pos = Core.weighted_centroid_localization(
+                                    hydrophones
+                                )
+                                tdoa_pos = Core.tdoa_localization(hydrophones)
+                                tmm_pos = Core.tmm_localization(hydrophones)
+                                sr_ls_pos = Core.sr_ls_localization(hydrophones)
+
+                                data = self._format_for_file(
+                                    snapshot,
+                                    {
+                                        "truth_pos": true_pos,
+                                        "centroid": centroid_pos,
+                                        "tdoa": tdoa_pos,
+                                        "tmm": tmm_pos,
+                                        "sr_ls": sr_ls_pos,
+                                    },
+                                )
+                                run_data.append(data)
+
+                            except Exception as e:
+                                print(
+                                    f"+ Warning: Error processing snapshot at time {snapshot['time_spent']}: {e}\n"
+                                )
+                                continue
+
+                        write_data.append({"data": run_data, "variance": variance})
+
+                    # Scrivi tutto insieme nel file
+                    with open(out_path, "a") as w:
+                        w.write(json.dumps(write_data) + "\n")
+
+                print(f"| Saved {len(run_data)} tracking results")
+                print(f"+ File {f_name} processed successfully\n")
+
+            except Exception as e:
+                print(f"| Error processing file {f_name}: {e}")
+                continue
+
+        print(f"+ Tracking completed successfully!")
+
+
+def parse_args():
+    """Parse command line arguments for tracking"""
+    if len(sys.argv) < 2:
+        print("Error: You must specify the output folder path.")
+        print("Usage: python tracking.py /path/to/output/folder")
+        print("Example: python tracking.py output/sample_simulation")
+        sys.exit(1)
+
+    output_folder = sys.argv[1]
+    return output_folder
+
+
+def main():
+    """Main function for tracking module"""
+    try:
+        print("+ Starting Tracking")
+        output_folder = parse_args()
+
+        # Check if output folder exists
+        if not os.path.exists(output_folder):
+            print(f"| Error: Output folder not found: {output_folder}")
+            sys.exit(1)
+
+        # Check if it's a directory
+        if not os.path.isdir(output_folder):
+            print(f"| Error: Path is not a directory: {output_folder}")
+            sys.exit(1)
+
+        # Check if config exists
+        config_path = f"{output_folder}/config.yaml"
+        if not os.path.exists(config_path):
+            print(f"| Error: Config file not found: {config_path}")
+            sys.exit(1)
+
+        # Create and run tracking
+        tracker = Tracking(output_folder)
+
+        tracker.run()
+
+    except KeyboardInterrupt:
+        print("\n+ Tracking interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"| Error: Tracking failed - {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
+
+# [
+#   {
+#     "data": [
+#       {
+#         "ships": [...],
+#         "hydrophones": [...],
+#         "area": [...],
+#         "time_spent": 0,
+#         "tracking": {
+#           "truth_pos": [11.032, 84.015],
+#           "centroid": [10.924202917740102, 83.9728944697951],
+#           "tdoa": [11.005664581207112, 84.00508367181102],
+#           "tmm": [11.007843804451092, 84.00759253461663],
+#           "sr_ls": [11.005948131814343, 84.00538395289065]
+#         }
+#       },
+#       // ... altri timestep per questa varianza
+#     ],
+#     "variance": 1e-05
+#   },
+#   // ... altri blocchi per diverse varianze
+# ]

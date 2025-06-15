@@ -1,4 +1,6 @@
 import json
+import os
+import sys
 import numpy as np
 import yaml
 
@@ -8,6 +10,8 @@ from environment import Environment, GeoBoundingBox
 from hydrophone import Hydrophone
 from ship import Ship
 from bathymetry import Bathymetry
+
+SIMULATION_FOLDER = "simulation"
 
 
 class Simulation:
@@ -40,10 +44,17 @@ class Simulation:
         folder = f"{self.output}/{self.name}"
 
         Utils.create_empty_folder(folder)
-        print(f"+ Initialized output folder: {folder}")
+        Utils.create_empty_folder(f"{folder}/{SIMULATION_FOLDER}")
+        print(f"| Writing in initialized output folder: {folder}")
 
         self.time_spent = 0
         self.toa_variance = self.config["environment"].get("toa_variance", [0])
+
+        print(f"| Cloning config file into output folder for further analysis...")
+        with open(f"{self.output}/{self.name}/config.yaml", "w") as f:
+            yaml.safe_dump(self.config, f, default_flow_style=False)
+
+        print("+ Setup ended correctly\n")
 
     def initialize_environment(self, toa_variance: float):
         """Initialize environment from configuration"""
@@ -236,14 +247,7 @@ class Simulation:
     def run(self, total_steps):
         """Run the simulation"""
         num_digits = len(str(self.iterations))
-        out_folder = f"{self.output}/{self.name}"
-        print(f"+ Writing in {out_folder}")
-
-        print(f"+ Cloning config file into output folder for further analysis...")
-        with open(f"{out_folder}/config.yaml", "w") as f:
-            yaml.safe_dump(self.config, f, default_flow_style=False)
-
-        print("+ Starting Simulation...")
+        out_folder = f"{self.output}/{self.name}/{SIMULATION_FOLDER}"
 
         for it in range(self.iterations):
             print(f"+ Computing iteration {it}")
@@ -282,8 +286,90 @@ class Simulation:
             with open(out_name, "w") as f:
                 f.write(json.dumps(iteration_data) + "\n")
 
-        print("+ Simulation end")
+            print(f"+ Iteration {it} ended correctly\n")
 
+
+def parse_args():
+    """Parse command line arguments for simulation"""
+    if len(sys.argv) < 2:
+        print("Error: You must specify the path of the config file.")
+        print(
+            "Usage: python simulation.py /path/to/config.yaml [-i <iterations>] [-s <steps>]"
+        )
+        sys.exit(1)
+
+    config_path = sys.argv[1]
+    iterations = 1
+    steps = 5
+
+    # Parse iterations
+    if "-i" in sys.argv:
+        try:
+            i_index = sys.argv.index("-i")
+            if i_index + 1 >= len(sys.argv):
+                print("Error: -i option requires a number.")
+                sys.exit(1)
+
+            iterations = int(sys.argv[i_index + 1])
+            if iterations <= 0:
+                print("Error: iterations must be a positive number.")
+                sys.exit(1)
+
+        except ValueError:
+            print("Error: iterations must be a valid integer.")
+            sys.exit(1)
+
+    # Parse steps
+    if "-s" in sys.argv:
+        try:
+            s_index = sys.argv.index("-s")
+            if s_index + 1 >= len(sys.argv):
+                print("Error: -s option requires a number.")
+                sys.exit(1)
+
+            steps = int(sys.argv[s_index + 1])
+            if steps <= 0:
+                print("Error: steps must be a positive number.")
+                sys.exit(1)
+
+        except ValueError:
+            print("Error: steps must be a valid integer.")
+            sys.exit(1)
+
+    return config_path, iterations, steps
+
+
+def main():
+    """Main function for simulation module"""
+    try:
+        config_path, iterations, steps = parse_args()
+
+        print(f"+ Starting Darkships Simulation")
+        print(f"| Config: {config_path}")
+        print(f"| Iterations: {iterations}")
+        print(f"| Steps per iteration: {steps}")
+
+        # Check if config file exists
+        if not os.path.exists(config_path):
+            print(f"Error: Config file not found: {config_path}")
+            sys.exit(1)
+
+        # Create and run simulation
+        sim = Simulation(config_path, 60, iterations)
+        sim.run(steps)
+
+        print("+ Simulation completed successfully!")
+
+    except KeyboardInterrupt:
+        print("+ Simulation interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"- Simulation failed: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
 
 # will produce...
 # [

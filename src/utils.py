@@ -20,7 +20,7 @@ class Utils:
             os.makedirs(folder_path)
 
     @staticmethod
-    def _ls(path: str, starting_with: str):
+    def _ls(path: str, contains: str | None):
         if not os.path.exists(path) or not os.path.isdir(path):
             print(f"Error: '{path}' doesn't exist or isn't a folder.")
             return []
@@ -28,7 +28,7 @@ class Utils:
         files = []
 
         for filename in os.listdir(path):
-            if filename.startswith(starting_with):
+            if contains is None or contains in filename:
                 file_path = os.path.join(path, filename)
 
                 if os.path.isfile(file_path):
