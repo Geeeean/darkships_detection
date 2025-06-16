@@ -59,6 +59,8 @@ class Simulation:
     def initialize_environment(self, toa_variance: float):
         """Initialize environment from configuration"""
 
+        self.object_counter = 1
+
         self.environment = Environment(
             area=self._get_area(),
             bathymetry=self._get_bathymetry(),
@@ -262,6 +264,8 @@ class Simulation:
             # Array per raccogliere tutti i dati di questa iterazione
             iteration_data = []
 
+            np.random.seed(42 + it)  # Different seed for each iteration
+
             for i in range(len(self.toa_variance)):
                 variance = self.toa_variance[i]
                 print(f"| Processing variance {variance}")
@@ -274,13 +278,17 @@ class Simulation:
                 variance_data = []
                 while t < total_steps:
                     self.time_spent = t * self.delta_t_sec
-                    self.update_simulation(t * self.delta_t_sec)
+                    self.update_simulation(self.delta_t_sec)
                     data = self.format_for_file()
                     variance_data.append(data)
                     t += 1
 
+
                 # Aggiungi all'array dell'iterazione
                 iteration_data.append({"variance": variance, "data": variance_data})
+                print(variance_data)
+
+                exit(1)
 
             # Scrivi tutto l'array nel file
             with open(out_name, "w") as f:
