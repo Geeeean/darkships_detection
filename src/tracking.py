@@ -142,6 +142,7 @@ class Tracking:
                                         "sr_ls": sr_ls_pos,
                                     },
                                 )
+
                                 run_data.append(data)
 
                             except Exception as e:

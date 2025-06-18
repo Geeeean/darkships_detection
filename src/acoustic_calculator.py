@@ -68,7 +68,6 @@ class AcousticCalculator:
 
         attenuation_linear = self.attenuation_cache.get((ship_point, hydro_point))
         if attenuation_linear is None:
-
             # calculate attenuation of the pressure based on the distance
             attenuation = AcousticCalculator.calculate_attenuation(env)  # [dB]
             attenuation_linear = AcousticCalculator.db_to_linear(

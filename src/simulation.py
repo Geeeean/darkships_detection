@@ -1,4 +1,5 @@
 import json
+import copy
 import os
 import sys
 import numpy as np
@@ -82,7 +83,7 @@ class Simulation:
         return area
 
     def _get_bathymetry(self):
-        bathymetry_path = self.config["environment"].get("bathymetry_path")
+        bathymetry_path = self.config["environment"].get("bathymetry_path", None)
         return Bathymetry(bathymetry_path)
 
     def _get_noise_level(self):
@@ -280,15 +281,11 @@ class Simulation:
                     self.time_spent = t * self.delta_t_sec
                     self.update_simulation(self.delta_t_sec)
                     data = self.format_for_file()
-                    variance_data.append(data)
+                    variance_data.append(copy.deepcopy(data))
                     t += 1
-
 
                 # Aggiungi all'array dell'iterazione
                 iteration_data.append({"variance": variance, "data": variance_data})
-                print(variance_data)
-
-                exit(1)
 
             # Scrivi tutto l'array nel file
             with open(out_name, "w") as f:

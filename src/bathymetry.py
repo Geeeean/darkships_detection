@@ -7,8 +7,11 @@ from point import Point
 
 
 class Bathymetry:
-    def __init__(self, path: str):
-        self.data = xr.open_dataset(path)
+    def __init__(self, path: str | None):
+        if path is None:
+            self.data = None
+        else:
+            self.data = xr.open_dataset(path)
 
     def get_depth(self, coord: Geopoint) -> float:
         """
@@ -55,6 +58,9 @@ class Bathymetry:
                 [1000, 25]  # 25 m at 1km
             ]
         """
+        if self.data is None:
+            return np.array([[0, 25]])
+
         lats = np.linspace(start_coords.latitude, end_coords.latitude, num_points)
         lons = np.linspace(start_coords.longitude, end_coords.longitude, num_points)
 
@@ -85,7 +91,7 @@ class Bathymetry:
 
     @staticmethod
     def bellhop_sanitized(bathy):
-        if (len(bathy) == 1):
+        if len(bathy) == 1:
             return bathy[0][1]
 
         return bathy
