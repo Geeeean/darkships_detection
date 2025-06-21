@@ -265,6 +265,19 @@ class TMMLocalizer(CoordinateHandler):
         return x_0
 
     def tmm_localize(self, max_iterations=100, tolerance=1e-8):
+        # Step 1: Initial x est
+        x_init = self._find_initial_point()
+
+        return self.tmm_iteration(x_init, max_iterations, tolerance)
+
+    def tmm_localize_sr_ls_init(self, max_iterations=100, tolerance=1e-8):
+        est = Core.sr_ls_localization(self.hydrophones)
+        utm_est = self.geo_to_utm(est[0], est[1])
+        x_init = [utm_est[0], utm_est[1]]
+
+        return self.tmm_iteration(x_init, max_iterations, tolerance)
+
+    def tmm_iteration(self, x_init, max_iterations, tolerance):
         """
         Algorithm 3 from the paper: T-MM underwater acoustic-based location algorithm.
         Reference: equations (28)-(29)
@@ -272,9 +285,6 @@ class TMMLocalizer(CoordinateHandler):
 
         s = self.get_utm_coords()
         tdoa_diffs = self._compute_distances()  # Δd_i = v_water * τ_i (d_i - d_1)
-
-        # Step 1: Initial x est
-        x_init = self._find_initial_point()
 
         d1_init = np.linalg.norm(x_init - s[0])
         di_fixed = [d1_init + tdoa_diffs[i] for i in range(len(s))]
@@ -471,6 +481,11 @@ class Core:
     def tmm_localization(hydrophones: list[Hydrophone]):
         localizer = TMMLocalizer(hydrophones)
         return localizer.tmm_localize()
+
+    @staticmethod
+    def tmm_localization_sr_ls_init(hydrophones: list[Hydrophone]):
+        localizer = TMMLocalizer(hydrophones)
+        return localizer.tmm_localize_sr_ls_init()
 
     @staticmethod
     def sr_ls_localization(hydrophones: list[Hydrophone]):

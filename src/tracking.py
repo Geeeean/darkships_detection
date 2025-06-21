@@ -131,6 +131,9 @@ class Tracking:
                                 tdoa_pos = Core.tdoa_localization(hydrophones)
                                 tmm_pos = Core.tmm_localization(hydrophones)
                                 sr_ls_pos = Core.sr_ls_localization(hydrophones)
+                                tmm_sr_ls_pos = Core.tmm_localization_sr_ls_init(
+                                    hydrophones
+                                )
 
                                 data = self._format_for_file(
                                     snapshot,
@@ -140,6 +143,7 @@ class Tracking:
                                         "tdoa": tdoa_pos,
                                         "tmm": tmm_pos,
                                         "sr_ls": sr_ls_pos,
+                                        "tmm_sr_ls": tmm_sr_ls_pos,
                                     },
                                 )
 

@@ -9,14 +9,15 @@ environment:
 hydrophones_config:
   # DATA FOR MANUAL HYDROPHONES GENERATION
   hydrophones:
-      - coordinates: [11.0, 84.0]     # Idrofono 1
-        depth: 20                     # [m]
-      - coordinates: [11.03, 84.0]    # Idrofono 2
-        depth: 20                     # [m]
-      - coordinates: [11.03, 84.03]   # Idrofono 3
-        depth: 20                     # [m]
-      - coordinates: [11.0, 84.03]    # Idrofono 4
-        depth: 20                     # [m]
+      - coordinates: [11.005, 83.998]   # Idrofono 1
+        depth: 20                       # [m]
+      - coordinates: [11.028, 84.002]   # Idrofono 2
+        depth: 20                       # [m]
+      - coordinates: [11.032, 84.035]   # Idrofono 3
+        depth: 20                       # [m]
+      - coordinates: [10.997, 84.027]   # Idrofono 4
+        depth: 20                       # [m]
+
   noise_level: 2.0                  # [dB re 1 µPa]
 
   # DATA FOR RANDOM HYDROPHONES GENERATION

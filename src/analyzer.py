@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import sys
 import os
 import yaml
-from typing import Dict, List, Tuple, Any
+from typing import Dict, Any
 import warnings
 from utils import Utils
 from geopy.distance import geodesic
@@ -40,7 +40,7 @@ class TrackingAnalyzer:
         # Data storage
         self.tracking_data = {}
         self.processed_data = None
-        self.algorithm_names = ["centroid", "tdoa", "tmm", "sr_ls"]
+        self.algorithm_names = ["tdoa", "tmm", "sr_ls"]
 
         print("+ Setup ended correctly\n")
 
@@ -286,10 +286,10 @@ class TrackingAnalyzer:
         # Algorithm performance summary
         report_lines.append("## Algorithm Performance Summary")
         report_lines.append(
-            "| Algorithm | Success Rate | Mean Error (m) | Std Error (m) | Median Error (m) |"
+            "| Algorithm | Mean Error (m) | Std Error (m) | Median Error (m) |"
         )
         report_lines.append(
-            "|-----------|--------------|----------------|---------------|------------------|"
+            "|-----------|----------------|---------------|------------------|"
         )
 
         for algo in self.algorithm_names:
@@ -297,14 +297,14 @@ class TrackingAnalyzer:
                 algo_stats = stats["algorithms"][algo]
                 if "mean_error_meters" in algo_stats:
                     report_lines.append(
-                        f"| {algo.upper()} | {algo_stats['success_rate']:.3f} | "
+                        f"| {algo.upper()} | "
                         f"{algo_stats['mean_error_meters']:.2f} | {algo_stats['std_error_meters']:.2f} | "
                         f"{algo_stats['median_error_meters']:.2f} |"
                     )
-                else:
-                    report_lines.append(
-                        f"| {algo.upper()} | {algo_stats['success_rate']:.3f} | - | - | - |"
-                    )
+                # else:
+                #     report_lines.append(
+                #         f"| {algo.upper()} | {algo_stats['success_rate']:.3f} | - | - | - |"
+                #     )
 
         report_lines.append("")
 
@@ -313,10 +313,10 @@ class TrackingAnalyzer:
         for variance in stats["unique_variances"]:
             report_lines.append(f"### Variance: {variance}")
             report_lines.append(
-                "| Algorithm | Mean Error (m) | Std Error (m) | Success Rate |"
+                "| Algorithm | Mean Error (m) | Std Error (m) |"
             )
             report_lines.append(
-                "|-----------|----------------|---------------|--------------|"
+                "|-----------|----------------|---------------|"
             )
 
             if variance in stats["by_variance"]:
@@ -325,7 +325,7 @@ class TrackingAnalyzer:
                         algo_stats = stats["by_variance"][variance][algo]
                         report_lines.append(
                             f"| {algo.upper()} | {algo_stats['mean_error_meters']:.2f} | "
-                            f"{algo_stats['std_error_meters']:.2f} | {algo_stats['success_rate']:.3f} |"
+                            f"{algo_stats['std_error_meters']:.2f} |"
                         )
             report_lines.append("")
 
@@ -681,6 +681,443 @@ class TrackingAnalyzer:
 
         print(f"+ Spatial analysis plots completed\n")
 
+    def plot_environment_map(self, variance_to_plot=None, save_plots: bool = True):
+        """
+        Plot environment map showing hydrophones and ship movement
+
+        Args:
+            variance_to_plot: Specific variance level to plot (if None, uses lowest variance)
+            save_plots: Whether to save the plot
+        """
+        print(f"+ Generating environment map")
+
+        if self.processed_data is None:
+            raise ValueError("Data not processed. Call process_data() first.")
+
+        # Select variance level to plot
+        if variance_to_plot is None:
+            variance_to_plot = self.processed_data["variance"].min()
+
+        # Filter data for selected variance
+        map_data = self.processed_data[
+            self.processed_data["variance"] == variance_to_plot
+        ].sort_values("time_spent")
+
+        if len(map_data) == 0:
+            print(f"| No data found for variance {variance_to_plot}")
+            return
+
+        # Extract hydrophone positions from config
+        hydrophones = self.config["hydrophones_config"]["hydrophones"]
+        hydro_lats = [h["coordinates"][0] for h in hydrophones]
+        hydro_lons = [h["coordinates"][1] for h in hydrophones]
+
+        # Extract ship trajectory
+        ship_lats = map_data["true_lat"].values
+        ship_lons = map_data["true_lon"].values
+        times = map_data["time_spent"].values
+
+        # Create the plot
+        plt.figure(figsize=(14, 10))
+
+        # Plot hydrophones
+        plt.scatter(
+            hydro_lons,
+            hydro_lats,
+            c="blue",
+            marker="^",
+            s=300,
+            label="Idrofoni",
+            edgecolors="white",
+            linewidth=2,
+            zorder=5,
+        )
+
+        # Add hydrophone labels
+        for i, (lon, lat) in enumerate(zip(hydro_lons, hydro_lats)):
+            plt.annotate(
+                f"H{i+1}",
+                (lon, lat),
+                xytext=(8, 8),
+                textcoords="offset points",
+                fontsize=12,
+                fontweight="bold",
+                color="blue",
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+            )
+
+        # Plot ship trajectory
+        plt.plot(
+            ship_lons,
+            ship_lats,
+            "k-",
+            linewidth=3,
+            label="Traiettoria nave",
+            alpha=0.8,
+            zorder=3,
+        )
+
+        # Plot ship positions with time gradient
+        scatter = plt.scatter(
+            ship_lons,
+            ship_lats,
+            c=times,
+            cmap="Reds",
+            s=80,
+            alpha=0.9,
+            edgecolors="black",
+            linewidth=0.5,
+            zorder=4,
+        )
+
+        # Mark start and end positions
+        plt.scatter(
+            ship_lons[0],
+            ship_lats[0],
+            c="green",
+            marker="*",
+            s=400,
+            label="Posizione iniziale",
+            edgecolors="black",
+            linewidth=2,
+            zorder=6,
+        )
+
+        plt.scatter(
+            ship_lons[-1],
+            ship_lats[-1],
+            c="red",
+            marker="*",
+            s=400,
+            label="Posizione finale",
+            edgecolors="black",
+            linewidth=2,
+            zorder=6,
+        )
+
+        # Calculate tight bounds based on actual data
+        all_lats = hydro_lats + ship_lats.tolist()
+        all_lons = hydro_lons + ship_lons.tolist()
+
+        lat_min, lat_max = min(all_lats), max(all_lats)
+        lon_min, lon_max = min(all_lons), max(all_lons)
+
+        # Calculate ranges
+        lat_range = lat_max - lat_min
+        lon_range = lon_max - lon_min
+
+        # If range is very small, set minimum range
+        min_range = 0.005  # About 500m at this latitude
+        if lat_range < min_range:
+            lat_center = (lat_min + lat_max) / 2
+            lat_min = lat_center - min_range / 2
+            lat_max = lat_center + min_range / 2
+            lat_range = min_range
+
+        if lon_range < min_range:
+            lon_center = (lon_min + lon_max) / 2
+            lon_min = lon_center - min_range / 2
+            lon_max = lon_center + min_range / 2
+            lon_range = min_range
+
+        # Add margin (30% for better visibility)
+        margin = 0.3
+        lat_margin = lat_range * margin
+        lon_margin = lon_range * margin
+
+        plt.xlim(lon_min - lon_margin, lon_max + lon_margin)
+        plt.ylim(lat_min - lat_margin, lat_max + lat_margin)
+
+        # Add colorbar for time
+        cbar = plt.colorbar(scatter, ax=plt.gca(), shrink=0.8)
+        cbar.set_label("Tempo (s)", fontsize=12, fontweight="bold")
+
+        # Labels and title
+        plt.xlabel("Longitudine (°)", fontsize=14, fontweight="bold")
+        plt.ylabel("Latitudine (°)", fontsize=14, fontweight="bold")
+        plt.title(
+            f"Mappa Ambiente - Idrofoni e Movimento Nave",
+            fontsize=16,
+            fontweight="bold",
+            pad=20,
+        )
+
+        # Grid and legend
+        plt.grid(True, alpha=0.4, linestyle="-", linewidth=0.5)
+        plt.legend(loc="best", fontsize=12, framealpha=0.9)
+
+        # Set tick format to show more decimal places
+        plt.gca().ticklabel_format(useOffset=False, style="plain")
+
+        # Add scale information
+        # Calculate approximate scale in meters
+        lat_center = (lat_min + lat_max) / 2
+        lon_center = (lon_min + lon_max) / 2
+
+        # Calculate distance for the plot range
+        total_distance = 0
+        if len(ship_lats) > 1:
+            for i in range(1, len(ship_lats)):
+                dist = geodesic(
+                    (ship_lats[i - 1], ship_lons[i - 1]), (ship_lats[i], ship_lons[i])
+                ).meters
+                total_distance += dist
+
+        # Add text box with info
+        info_text = f"Area: {lat_range:.4f}° × {lon_range:.4f}°\n"
+        if total_distance > 0:
+            info_text += f"Distanza nave: {total_distance:.0f} m\n"
+            info_text += f"Durata: {times[-1] - times[0]:.0f} s"
+
+        plt.text(
+            0.02,
+            0.98,
+            info_text,
+            transform=plt.gca().transAxes,
+            fontsize=10,
+            verticalalignment="top",
+            bbox=dict(boxstyle="round,pad=0.5", facecolor="lightblue", alpha=0.8),
+        )
+
+        plt.tight_layout()
+
+        if save_plots:
+            plot_file = os.path.join(
+                self.results_folder, f"environment_map_var_{variance_to_plot:.0e}.png"
+            )
+            plt.savefig(plot_file, dpi=300, bbox_inches="tight")
+            print(f"| Environment map saved to: {plot_file}")
+
+        # Print statistics
+        print(
+            f"| Map bounds: Lat [{lat_min:.5f}, {lat_max:.5f}], Lon [{lon_min:.5f}, {lon_max:.5f}]"
+        )
+        if total_distance > 0:
+            print(
+                f"| Ship trajectory: {total_distance:.1f} m in {times[-1] - times[0]:.0f} s"
+            )
+            print(
+                f"| Average speed: {total_distance / (times[-1] - times[0]) * 3.6:.1f} km/h"
+            )
+
+        print(f"+ Environment map completed\n")
+
+    def plot_algorithm_comparison_map(
+        self, variance_to_plot=None, save_plots: bool = True
+    ):
+        """
+        Plot map comparing algorithm estimates with true positions - separate files
+        """
+        print(f"+ Generating algorithm comparison maps")
+        if self.processed_data is None:
+            raise ValueError("Data not processed. Call process_data() first.")
+
+        # Select variance level to plot
+        if variance_to_plot is None:
+            variance_to_plot = self.processed_data["variance"].min()
+
+        # Filter data for selected variance
+        map_data = self.processed_data[
+            self.processed_data["variance"] == variance_to_plot
+        ].sort_values("time_spent")
+
+        if len(map_data) == 0:
+            print(f"| No data found for variance {variance_to_plot}")
+            return
+
+        # Extract hydrophone positions
+        hydrophones = self.config["hydrophones_config"]["hydrophones"]
+        hydro_lats = [h["coordinates"][0] for h in hydrophones]
+        hydro_lons = [h["coordinates"][1] for h in hydrophones]
+
+        # Colors for algorithms
+        colors = {"tdoa": "red", "tmm": "black", "sr_ls": "blue"}
+
+        algorithms = ["tdoa", "tmm", "sr_ls"]
+
+        # Calculate bounds once for all plots (for consistency)
+        all_lats = hydro_lats + map_data["true_lat"].tolist()
+        all_lons = hydro_lons + map_data["true_lon"].tolist()
+
+        # Add algorithm estimates to bounds calculation
+        for algo in algorithms:
+            algo_data = map_data[map_data[f"{algo}_lat"].notna()]
+            if len(algo_data) > 0:
+                all_lats.extend(algo_data[f"{algo}_lat"].tolist())
+                all_lons.extend(algo_data[f"{algo}_lon"].tolist())
+
+        lat_min, lat_max = min(all_lats), max(all_lats)
+        lon_min, lon_max = min(all_lons), max(all_lons)
+
+        # Calculate ranges with minimum range
+        lat_range = lat_max - lat_min
+        lon_range = lon_max - lon_min
+        min_range = 0.005  # About 500m at this latitude
+
+        if lat_range < min_range:
+            lat_center = (lat_min + lat_max) / 2
+            lat_min = lat_center - min_range / 2
+            lat_max = lat_center + min_range / 2
+            lat_range = min_range
+
+        if lon_range < min_range:
+            lon_center = (lon_min + lon_max) / 2
+            lon_min = lon_center - min_range / 2
+            lon_max = lon_center + min_range / 2
+            lon_range = min_range
+
+        # Add margin
+        margin = 0.2
+        lat_margin = lat_range * margin
+        lon_margin = lon_range * margin
+
+        # Create separate plot for each algorithm
+        for algo in algorithms:
+            plt.figure(figsize=(12, 10))
+
+            # Plot hydrophones
+            plt.scatter(
+                hydro_lons,
+                hydro_lats,
+                c="blue",
+                marker="^",
+                s=200,
+                label="Idrofoni",
+                edgecolors="white",
+                linewidth=2,
+                zorder=5,
+            )
+
+            # Add hydrophone labels
+            for i, (lon, lat) in enumerate(zip(hydro_lons, hydro_lats)):
+                plt.annotate(
+                    f"H{i+1}",
+                    (lon, lat),
+                    xytext=(8, 8),
+                    textcoords="offset points",
+                    fontsize=10,
+                    fontweight="bold",
+                    color="blue",
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+                )
+
+            # Plot true trajectory
+            plt.plot(
+                map_data["true_lon"],
+                map_data["true_lat"],
+                "k-",
+                linewidth=3,
+                label="Traiettoria reale",
+                alpha=0.8,
+                zorder=3,
+            )
+
+            # Plot algorithm estimates
+            algo_data = map_data[map_data[f"{algo}_lat"].notna()]
+            if len(algo_data) > 0:
+                plt.plot(
+                    algo_data[f"{algo}_lon"],
+                    algo_data[f"{algo}_lat"],
+                    "o-",
+                    color=colors[algo],
+                    linewidth=2,
+                    markersize=6,
+                    label=f"Stima {algo.upper()}",
+                    alpha=0.9,
+                    zorder=4,
+                )
+
+                # Connect true and estimated positions with lines (show first 10 for clarity)
+                for _, row in algo_data.head(10).iterrows():
+                    plt.plot(
+                        [row["true_lon"], row[f"{algo}_lon"]],
+                        [row["true_lat"], row[f"{algo}_lat"]],
+                        "gray",
+                        linestyle=":",
+                        alpha=0.4,
+                        linewidth=1,
+                    )
+
+            # Mark start and end positions
+            plt.scatter(
+                map_data["true_lon"].iloc[0],
+                map_data["true_lat"].iloc[0],
+                c="green",
+                marker="*",
+                s=300,
+                label="Posizione iniziale",
+                edgecolors="black",
+                linewidth=2,
+                zorder=6,
+            )
+
+            plt.scatter(
+                map_data["true_lon"].iloc[-1],
+                map_data["true_lat"].iloc[-1],
+                c="red",
+                marker="*",
+                s=300,
+                label="Posizione finale",
+                edgecolors="black",
+                linewidth=2,
+                zorder=6,
+            )
+
+            # Set consistent bounds for all plots
+            plt.xlim(lon_min - lon_margin, lon_max + lon_margin)
+            plt.ylim(lat_min - lat_margin, lat_max + lat_margin)
+
+            # Labels and title
+            plt.xlabel("Longitudine (°)", fontsize=12, fontweight="bold")
+            plt.ylabel("Latitudine (°)", fontsize=12, fontweight="bold")
+            plt.title(
+                f"Confronto Localizzazione: {algo.upper()}\n(TOA Variance: {variance_to_plot:.0e})",
+                fontsize=14,
+                fontweight="bold",
+                pad=15,
+            )
+
+            # Grid and legend
+            plt.grid(True, alpha=0.4)
+            plt.legend(fontsize=10, framealpha=0.9)
+
+            # Format ticks
+            plt.gca().ticklabel_format(useOffset=False, style="plain")
+
+            # Calculate and display error statistics for this algorithm
+            if len(algo_data) > 0:
+                error_stats = algo_data[f"{algo}_error_meters"]
+                mean_error = error_stats.mean()
+                std_error = error_stats.std()
+
+                stats_text = f"Errore medio: {mean_error:.1f} m\nStd: {std_error:.1f} m\nPunti: {len(algo_data)}"
+                plt.text(
+                    0.02,
+                    0.02,
+                    stats_text,
+                    transform=plt.gca().transAxes,
+                    fontsize=9,
+                    verticalalignment="bottom",
+                    bbox=dict(
+                        boxstyle="round,pad=0.4", facecolor="lightgray", alpha=0.8
+                    ),
+                )
+
+            plt.tight_layout()
+
+            if save_plots:
+                plot_file = os.path.join(
+                    self.results_folder,
+                    f"algorithm_map_{algo}_var_{variance_to_plot:.0e}.png",
+                )
+                plt.savefig(plot_file, dpi=300, bbox_inches="tight")
+                print(f"| {algo.upper()} map saved to: {plot_file}")
+
+            # Close the figure to free memory
+            plt.close()
+
+        print(f"+ Algorithm comparison maps completed\n")
+
     def run_full_analysis(self):
         """Run complete analysis pipeline"""
         # Load and process data
@@ -694,6 +1131,9 @@ class TrackingAnalyzer:
         self.plot_performance_vs_variance()
         self.plot_error_distributions()
         self.plot_spatial_analysis()
+
+        self.plot_environment_map()
+        self.plot_algorithm_comparison_map()
 
 
 def parse_args():
