@@ -1,5 +1,5 @@
 output_path: "./output"
-name: "thesis"
+name: "main"
 
 environment:
   area: [10, 12, 83.5, 85.5]  # lat_min, lat_max, long_min, long_max
@@ -9,7 +9,7 @@ environment:
 hydrophones_config:
   # DATA FOR MANUAL HYDROPHONES GENERATION
   hydrophones:
-      - coordinates: [11.005, 83.998]   # Idrofono 1
+      - coordinates: [11.005, 84.009]   # Idrofono 1
         depth: 20                       # [m]
       - coordinates: [11.028, 84.002]   # Idrofono 2
         depth: 20                       # [m]
@@ -27,7 +27,7 @@ hydrophones_config:
 
 ships_config:
   dark_ships:                       # Manual dark ships
-    - coordinates: [11.032, 84.015]    # Dark Ship 1
+    - coordinates: [11.025, 84.025]    # Dark Ship 1
       speed: 10                     # kt
       depth: 20                     # [m]
       heading: 200 # [°]

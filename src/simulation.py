@@ -5,6 +5,10 @@ import sys
 import numpy as np
 import yaml
 
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
+
 from utils import Utils
 from environment import Environment, GeoBoundingBox
 
@@ -18,11 +22,14 @@ SIMULATION_FOLDER = "simulation"
 class Simulation:
     """Handles environment setup and configuration parsing"""
 
-    def __init__(self, config_path: str, delta_t_sec: float, iterations: int):
+    def __init__(self, config_path: str, delta_t_sec: float, iterations: int, num_threads: int):
         self.config = self._load_config(config_path)
         self.object_counter = 1  # Global ship and hydro counter
         self.delta_t_sec = delta_t_sec
         self.iterations = iterations
+
+        # Thread setup
+        self.num_threads = num_threads
 
         self.setup_sim()
 
@@ -47,6 +54,7 @@ class Simulation:
         Utils.create_empty_folder(folder)
         Utils.create_empty_folder(f"{folder}/{SIMULATION_FOLDER}")
         print(f"| Writing in initialized output folder: {folder}")
+        print(f"| Using {self.num_threads} threads for parallel execution")
 
         self.time_spent = 0
         self.toa_variance = self.config["environment"].get("toa_variance", [0])
@@ -215,6 +223,43 @@ class Simulation:
         # 2. Compute hydrophone pressures
         self.environment.calculate_pressures()
 
+    @staticmethod
+    def add_positioning_error(latitude, longitude, error_radius_m=10):
+        """
+        Adds random positioning error to coordinates
+
+        Args:
+            latitude: original latitude in degrees
+            longitude: original longitude in degrees
+            error_radius_m: radius of positioning error in meters (default: 10m)
+
+        Returns:
+            tuple: (perturbed_latitude, perturbed_longitude)
+        """
+        # Approximate conversions (valid for mid-latitudes)
+        meters_per_degree_lat = 111320  # meters per degree of latitude
+
+        # Generate random error in polar coordinates
+        error_distance = np.random.uniform(0, error_radius_m)  # error distance [0, 10m]
+        error_angle = np.random.uniform(0, 2 * np.pi)  # random angle
+
+        # Convert to cartesian components (meters)
+        error_x_m = error_distance * np.cos(error_angle)
+        error_y_m = error_distance * np.sin(error_angle)
+
+        # Convert meters to degrees
+        error_lat_deg = error_y_m / meters_per_degree_lat
+
+        # For longitude, consider current latitude
+        meters_per_degree_lon = meters_per_degree_lat * np.cos(np.radians(latitude))
+        error_lon_deg = error_x_m / meters_per_degree_lon
+
+        # Apply error to coordinates
+        perturbed_lat = latitude + error_lat_deg
+        perturbed_lon = longitude + error_lon_deg
+
+        return perturbed_lat, perturbed_lon
+
     def format_for_file(self):
         ships_info = [
             {
@@ -228,70 +273,103 @@ class Simulation:
             for s in self.environment.ships
         ]
 
-        hydrophones_info = [
-            {
-                "id": h.id,
-                "longitude": h.coord.longitude,
-                "latitude": h.coord.latitude,
-                "depth": h.coord.depth,
-                "observed_pressure": h.observed_pressure,
-                # "expected_pressure": h.expected_pressure,
-            }
-            for h in self.environment.hydrophones
-        ]
+        hydrophones_info = []
+        for h in self.environment.hydrophones:
+             # Add positioning error (10 meters radius)
+             perturbed_lat, perturbed_lon = Simulation.add_positioning_error(
+                 h.coord.latitude,
+                 h.coord.longitude,
+                 error_radius_m=10
+             )
+
+             hydrophones_info.append({
+                 "id": h.id,
+                 "longitude": perturbed_lon,
+                 "latitude": perturbed_lat,
+                 "depth": h.coord.depth,
+                 "observed_pressure": h.observed_pressure,
+             })
 
         return {
             "ships": ships_info,
             "hydrophones": hydrophones_info,
-            "area": self.environment.area,
+            # "area": self.environment.area,
             "time_spent": self.time_spent,
         }
 
+    def run_single_iteration(self, iteration_id: int, total_steps: int):
+        """Run a single iteration of the simulation in a separate thread"""
+        # Set unique seed for this iteration (thread-safe)
+        np.random.seed(42 + iteration_id)
+
+        # Array to collect all data for this iteration
+        iteration_data = []
+
+        for i in range(len(self.toa_variance)):
+            # print(f"IT ID: [{iteration_id}], variance: {self.toa_variance[i]}")
+
+            variance = self.toa_variance[i]
+
+            # Initialize environment for this variance
+            self.initialize_environment(variance)
+
+            # Reset time
+            self.time_spent = 0
+            t = 0
+
+            # Collect all data for this variance
+            variance_data = []
+            while t < total_steps:
+                self.time_spent = t * self.delta_t_sec
+                self.update_simulation(self.delta_t_sec)
+                data = self.format_for_file()
+                variance_data.append(copy.deepcopy(data))
+                t += 1
+
+            # Add to iteration array
+            iteration_data.append({"variance": variance, "data": variance_data})
+
+        return iteration_id, iteration_data
+
     def run(self, total_steps):
-        """Run the simulation"""
+        """Run the simulation with parallel execution"""
+        start_time = time.time()
         num_digits = len(str(self.iterations))
         out_folder = f"{self.output}/{self.name}/{SIMULATION_FOLDER}"
 
-        for it in range(self.iterations):
-            print(f"+ Computing iteration {it}")
+        print(f"+ Starting simulation")
 
-            # Nome file unico per questa iterazione
-            iteration_str = str(it).zfill(num_digits)
-            f_name = f"{iteration_str}_simulation.jsonl"
-            out_name = f"{out_folder}/{f_name}"
+        # Use ThreadPoolExecutor for parallel execution
+        with ThreadPoolExecutor(max_workers=self.num_threads, thread_name_prefix="SimWorker") as executor:
+            # Submit all iterations
+            future_to_iteration = {
+                executor.submit(self.run_single_iteration, it, total_steps): it
+                for it in range(self.iterations)
+            }
 
-            print(f"| Producing file {f_name}")
+            # Process completed iterations
+            completed = 0
+            for future in as_completed(future_to_iteration):
+                iteration_id, iteration_data = future.result()
 
-            # Array per raccogliere tutti i dati di questa iterazione
-            iteration_data = []
+                # Write results to file
+                iteration_str = str(iteration_id).zfill(num_digits)
+                f_name = f"{iteration_str}_simulation.jsonl"
+                out_name = f"{out_folder}/{f_name}"
 
-            np.random.seed(42 + it)  # Different seed for each iteration
+                with open(out_name, "w") as f:
+                    f.write(json.dumps(iteration_data) + "\n")
 
-            for i in range(len(self.toa_variance)):
-                variance = self.toa_variance[i]
-                print(f"| Processing variance {variance}")
+                completed += 1
+                elapsed = time.time() - start_time
+                eta = (elapsed / completed) * (self.iterations - completed) if completed > 0 else 0
 
-                self.initialize_environment(variance)
-                self.time_spent = 0
-                t = 0
+                print(f"+ Completed iteration {iteration_id} ({completed}/{self.iterations})")
 
-                # Raccogli tutti i dati per questa varianza
-                variance_data = []
-                while t < total_steps:
-                    self.time_spent = t * self.delta_t_sec
-                    self.update_simulation(self.delta_t_sec)
-                    data = self.format_for_file()
-                    variance_data.append(copy.deepcopy(data))
-                    t += 1
-
-                # Aggiungi all'array dell'iterazione
-                iteration_data.append({"variance": variance, "data": variance_data})
-
-            # Scrivi tutto l'array nel file
-            with open(out_name, "w") as f:
-                f.write(json.dumps(iteration_data) + "\n")
-
-            print(f"+ Iteration {it} ended correctly\n")
+        total_time = time.time() - start_time
+        print(f"\n+ All iterations completed in {total_time:.1f}s")
+        print(f"| Average time per iteration: {total_time/self.iterations:.1f}s")
+        print(f"| Speedup vs sequential: ~{self.num_threads:.1f}x (theoretical)")
 
 
 def parse_args():
@@ -306,6 +384,7 @@ def parse_args():
     config_path = sys.argv[1]
     iterations = 1
     steps = 5
+    threads = None
 
     # Parse iterations
     if "-i" in sys.argv:
@@ -341,18 +420,33 @@ def parse_args():
             print("Error: steps must be a valid integer.")
             sys.exit(1)
 
-    return config_path, iterations, steps
+    # Parse threads
+    if "-t" in sys.argv:
+        try:
+            t_index = sys.argv.index("-t")
+            threads = int(sys.argv[t_index + 1])
+            if threads <= 0:
+                print("Error: threads must be a positive number.")
+                sys.exit(1)
+        except (ValueError, IndexError):
+            print("Error: -t option requires a valid integer.")
+            sys.exit(1)
+
+    return config_path, iterations, steps, threads
 
 
 def main():
     """Main function for simulation module"""
     try:
-        config_path, iterations, steps = parse_args()
+        config_path, iterations, steps, threads = parse_args()
+
+        threads = min(threads, os.cpu_count(), iterations)
 
         print(f"+ Starting Darkships Simulation")
         print(f"| Config: {config_path}")
         print(f"| Iterations: {iterations}")
         print(f"| Steps per iteration: {steps}")
+        print(f"| Threads: {threads if threads else 'auto'}")
 
         # Check if config file exists
         if not os.path.exists(config_path):
@@ -360,7 +454,7 @@ def main():
             sys.exit(1)
 
         # Create and run simulation
-        sim = Simulation(config_path, 60, iterations)
+        sim = Simulation(config_path, 60, iterations, threads)
         sim.run(steps)
 
         print("+ Simulation completed successfully!")

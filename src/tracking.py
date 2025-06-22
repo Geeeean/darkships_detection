@@ -71,7 +71,7 @@ class Tracking:
         return {
             "ships": ships_info,
             "hydrophones": hydrophones_info,
-            "area": snapshot["area"],
+            # "area": snapshot["area"],
             "time_spent": snapshot["time_spent"],
             "tracking": tracking,
         }
