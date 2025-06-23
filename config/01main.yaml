@@ -1,5 +1,5 @@
 output_path: "./output"
-name: "main"
+name: "main2"
 
 environment:
   area: [10, 12, 83.5, 85.5]  # lat_min, lat_max, long_min, long_max
@@ -10,30 +10,30 @@ hydrophones_config:
   # DATA FOR MANUAL HYDROPHONES GENERATION
   hydrophones:
       - coordinates: [11.005, 84.009]   # Idrofono 1
-        depth: 20                       # [m]
+        depth: 25                       # [m]
       - coordinates: [11.028, 84.002]   # Idrofono 2
-        depth: 20                       # [m]
+        depth: 22                       # [m]
       - coordinates: [11.032, 84.035]   # Idrofono 3
-        depth: 20                       # [m]
+        depth: 28                       # [m]
       - coordinates: [10.997, 84.027]   # Idrofono 4
-        depth: 20                       # [m]
+        depth: 24                       # [m]
 
-  noise_level: 2.0                  # [dB re 1 µPa]
+  noise_level: 2.0                      # [dB re 1 µPa]
 
   # DATA FOR RANDOM HYDROPHONES GENERATION
-  num_random: 0                     # Generate random hydrophones
-  max_range_range: [30, 50]         # [km]
-  depth_range: [0, 35]              # [m]
+  num_random: 0                         # Generate random hydrophones
+  max_range_range: [30, 50]             # [km]
+  depth_range: [0, 35]                  # [m]
 
 ships_config:
-  dark_ships:                       # Manual dark ships
-    - coordinates: [11.025, 84.025]    # Dark Ship 1
-      speed: 10                     # kt
-      depth: 20                     # [m]
+  dark_ships:                           # Manual dark ships
+    - coordinates: [11.025, 84.025]     # Dark Ship 1
+      speed: 10                         # kt
+      depth: 8                          # [m]
       heading: 200 # [°]
 
   # DATA FOR RANDOM SHIPS GENERATION
-  num_random_ais_ships: 0           # Generate random ais ships
-  num_random_dark_ships: 0          # Generate random dark ships
-  speed_range: [5,20]               # [kt]
-  depth_range: [0, 25]              # [m]
+  num_random_ais_ships: 0               # Generate random ais ships
+  num_random_dark_ships: 0              # Generate random dark ships
+  speed_range: [5,20]                   # [kt]
+  depth_range: [0, 25]                  # [m]

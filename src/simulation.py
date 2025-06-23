@@ -369,7 +369,6 @@ class Simulation:
         total_time = time.time() - start_time
         print(f"\n+ All iterations completed in {total_time:.1f}s")
         print(f"| Average time per iteration: {total_time/self.iterations:.1f}s")
-        print(f"| Speedup vs sequential: ~{self.num_threads:.1f}x (theoretical)")
 
 
 def parse_args():
@@ -384,7 +383,7 @@ def parse_args():
     config_path = sys.argv[1]
     iterations = 1
     steps = 5
-    threads = None
+    threads = 1
 
     # Parse iterations
     if "-i" in sys.argv:

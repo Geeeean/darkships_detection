@@ -89,6 +89,7 @@ class Environment:
         key_frequencies = np.linspace(min_freq, max_freq, num_key_freq)
         interp_frequencies = np.linspace(min_freq, max_freq, num_interp_freq)
 
+
         # Convert noise to linear scale
         noise_std_linear = 10 ** (self.noise_level / 20) if self.noise_level > 0 else 0
 
@@ -106,6 +107,7 @@ class Environment:
                         pressure, toa = self.ac.calculate_linear_pressure(
                             f, self.bathymetry, ship.coord, hydro.coord
                         )
+
                         pressure_values.append(pressure)
                         toa_values.append(toa)
 
@@ -124,6 +126,7 @@ class Environment:
                     toa_energy_pairs.append((best_toa, ship_energy))
 
                     total_observed_linear += ship_pressure
+
 
             # 6. Determine overall best TOA
             if toa_energy_pairs:

@@ -1,0 +1,33 @@
+output_path: "./output"
+name: "main_medium"
+environment:
+  area: [10, 12, 83.5, 85.5]  # Stessa area batimetria originale
+  bathymetry_path: "./bathymetry/bathymetry_sample.nc"
+  toa_variance: [1.0e-5, 1.0e-4, 1.0e-3, 1.0e-2, 1.0e-1, 1.0]
+hydrophones_config:
+  # Idrofoni molto vicini in un'area di ~500m x 500m
+  hydrophones:
+      - coordinates: [11.020, 84.020]  # Idrofono 1 - Nord-Ovest
+        depth: 25                      # [m]
+      - coordinates: [11.020, 84.024]  # Idrofono 2 - Nord-Est
+        depth: 22                      # [m]
+      - coordinates: [11.024, 84.024]  # Idrofono 3 - Sud-Est
+        depth: 28                      # [m]
+      - coordinates: [11.024, 84.020]  # Idrofono 4 - Sud-Ovest
+        depth: 24                      # [m]
+  noise_level: 2.0                     # [dB re 1 µPa]
+  # DATA FOR RANDOM HYDROPHONES GENERATION
+  num_random: 0                        # Generate random hydrophones
+  max_range_range: [30, 50]            # [km]
+  depth_range: [0, 35]                 # [m]
+ships_config:
+  dark_ships:                          # Manual dark ships
+    - coordinates: [11.021, 84.021]    # Dark Ship 1 - Partenza da angolo SO
+      speed: 1                         # kt (molto lenta per rimanere nell'area piccola)
+      depth: 8                         # [m]
+      heading: 45                      # [°] verso NE per attraversare l'array
+  # DATA FOR RANDOM SHIPS GENERATION
+  num_random_ais_ships: 0              # Generate random ais ships
+  num_random_dark_ships: 0             # Generate random dark ships
+  speed_range: [5,20]                  # [kt]
+  depth_range: [0, 25]                 # [m]

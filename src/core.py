@@ -267,6 +267,7 @@ class TMMLocalizer(CoordinateHandler):
     def tmm_localize(self, max_iterations=100, tolerance=1e-8):
         # Step 1: Initial x est
         x_init = self._find_initial_point()
+        # print(x_init)
 
         return self.tmm_iteration(x_init, max_iterations, tolerance)
 

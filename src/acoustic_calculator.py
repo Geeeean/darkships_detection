@@ -62,6 +62,7 @@ class AcousticCalculator:
         env = AcousticCalculator.get_bellhop_env(
             bathymetry, ship_point, hydro_point, frequency
         )
+        # print(env)
 
         arrivals = pm.compute_arrivals(env)
         first_arrival = arrivals["time_of_arrival"].min()

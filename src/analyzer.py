@@ -149,41 +149,44 @@ class TrackingAnalyzer:
                             record[f"{algo}_lon"] = est_lon
 
                             # Calculate geodesic distance error in meters
-                            error_meters = self._calculate_distance_error_meters(
-                                record["true_lat"], record["true_lon"], est_lat, est_lon
-                            )
-                            record[f"{algo}_error_meters"] = error_meters
+                            try:
+                                error_meters = self._calculate_distance_error_meters(
+                                    record["true_lat"], record["true_lon"], est_lat, est_lon
+                                )
+                                record[f"{algo}_error_meters"] = error_meters
 
-                            # Also keep the degree-based error for compatibility
-                            error_degrees = np.sqrt(
-                                (est_lat - record["true_lat"]) ** 2
-                                + (est_lon - record["true_lon"]) ** 2
-                            )
-                            record[f"{algo}_error_degrees"] = error_degrees
+                                # Also keep the degree-based error for compatibility
+                                error_degrees = np.sqrt(
+                                    (est_lat - record["true_lat"]) ** 2
+                                    + (est_lon - record["true_lon"]) ** 2
+                                )
+                                record[f"{algo}_error_degrees"] = error_degrees
 
-                            # Calculate individual lat/lon errors in degrees and meters
-                            record[f"{algo}_lat_error_degrees"] = abs(
-                                est_lat - record["true_lat"]
-                            )
-                            record[f"{algo}_lon_error_degrees"] = abs(
-                                est_lon - record["true_lon"]
-                            )
+                                # Calculate individual lat/lon errors in degrees and meters
+                                record[f"{algo}_lat_error_degrees"] = abs(
+                                    est_lat - record["true_lat"]
+                                )
+                                record[f"{algo}_lon_error_degrees"] = abs(
+                                    est_lon - record["true_lon"]
+                                )
 
-                            # Calculate lat/lon errors in meters (approximate)
-                            lat_error_meters = self._calculate_distance_error_meters(
-                                record["true_lat"],
-                                record["true_lon"],
-                                est_lat,
-                                record["true_lon"],
-                            )
-                            lon_error_meters = self._calculate_distance_error_meters(
-                                record["true_lat"],
-                                record["true_lon"],
-                                record["true_lat"],
-                                est_lon,
-                            )
-                            record[f"{algo}_lat_error_meters"] = lat_error_meters
-                            record[f"{algo}_lon_error_meters"] = lon_error_meters
+                                # Calculate lat/lon errors in meters (approximate)
+                                lat_error_meters = self._calculate_distance_error_meters(
+                                    record["true_lat"],
+                                    record["true_lon"],
+                                    est_lat,
+                                    record["true_lon"],
+                                )
+                                lon_error_meters = self._calculate_distance_error_meters(
+                                    record["true_lat"],
+                                    record["true_lon"],
+                                    record["true_lat"],
+                                    est_lon,
+                                )
+                                record[f"{algo}_lat_error_meters"] = lat_error_meters
+                                record[f"{algo}_lon_error_meters"] = lon_error_meters
+                            except:
+                                continue
 
                         else:
                             # Algorithm failed
